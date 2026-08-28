@@ -1,0 +1,52 @@
+{
+  "name": "ai-eclt",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "AI-ECLT - Examination Center Location Tracer",
+  "author": "AI-ECLT Team",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "build:prod": "vite build --mode production",
+    "preview": "vite preview",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint . --ext js,jsx --fix",
+    "format": "prettier --write 'src/**/*.{js,jsx,css,md}'",
+    "preview:prod": "vite preview --mode production",
+    "clean": "rm -rf dist node_modules/.vite"
+  },
+ "dependencies": {
+    "@heroicons/react": "^2.2.0",
+    "axios": "^1.7.9",
+    "lucide-react": "^0.562.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.18.2",
+    "react-hot-toast": "^2.5.2",
+    "react-icons": "^5.5.0",
+    "framer-motion": "^12.5.0",
+    "@react-google-maps/api": "^2.19.3",
+    "recharts": "^2.15.1",
+    "date-fns": "^4.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "autoprefixer": "^10.4.23",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.19",
+    "vite": "^7.2.4",
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/typography": "^0.5.16",
+    "prettier": "^3.5.3"
+  }
+}
