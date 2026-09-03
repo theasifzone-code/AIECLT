@@ -1,11 +1,16 @@
-// src/controllers/ocrController.js - ✅ FIXED
+
 const Tesseract = require('tesseract.js');
 const ExamCenter = require('../models/ExamCenter');
 const { AppError, catchAsync } = require('../utils/errorUtils');
 const logger = require('../utils/logger');
-const { extractTextFromImage } = require('../utils/ocrUtils');
 
-// ==================== CONSTANTS ====================
+
+const BLOCKED_WORDS = [
+  'FEDERAL', 'BOARD', 'EDUCATION', 'ISLAMABAD', 'PAKISTAN', 'PROVISIONAL',
+  'ANNUAL', 'EXAMINATION', 'ROLL', 'NUMBER', 'SLIP', 'DATE', 'SHEET',
+  'INTERMEDIATE', 'SECONDARY', 'REG', 'ID', 'NO', 'NAME', 'SYSTEM', 'PAK',
+  'TION', 'TION2023', 'ANNUAL2023', 'CENTRE', 'ALLOTED'
+];
 
 const OCR_CONFIG = {
   lang: 'eng+urd',
@@ -20,58 +25,56 @@ const OCR_CONFIG = {
   },
 };
 
-const EXTRACTION_PATTERNS = [
-  /Center Code\s*[:;]\s*([A-Z0-9]{3,10})/i,
-  /Exam Center\s*[:;]\s*([A-Z0-9]{3,10})/i,
-  /Center\s*Code\s*[:;]\s*([A-Z0-9]{3,10})/i,
-  /Code\s*[:;]\s*([A-Z0-9]{3,10})/i,
-  /([A-Z]{2,4}[-]?\d{3,6})/i,
-  /\b([A-Z0-9]{4,8})\b/i,
-];
 
-const FALLBACK_PATTERNS = [
-  /([A-Z]{2,4})\s*[-]?\s*(\d{3,6})/i,
-  /([A-Z]{2,4})\s*(\d{3,6})/i,
-];
 
-// ==================== HELPER FUNCTIONS ====================
+const isValidCenterCode = (code) => {
+  return /^[A-Z0-9]{3,10}$/.test(code) && !BLOCKED_WORDS.includes(code);
+};
 
-const extractCenterCode = (text) => {
+const extractCenterNameOrAddress = (text) => {
   const cleanText = text
-    .replace(/[^A-Za-z0-9\n\r\s:;.-]/g, ' ')
+    .replace(/[^A-Za-z0-9\n\r\s:;,().-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
-  logger.debug(`Cleaned text: ${cleanText.substring(0, 200)}...`);
-
-  for (const pattern of EXTRACTION_PATTERNS) {
-    const match = cleanText.match(pattern);
-    if (match) {
-      let code = match[1].trim();
-      code = code.replace(/[-_\s]/g, '');
-      logger.debug(`Matched pattern: ${pattern}, code: ${code}`);
-      return code.toUpperCase();
+  const centreAllotedPattern = /CENTRE\s*ALLOTED\s*:?\s*\(?([A-Za-z0-9\s,.-]+?)\)?\s*\(?/i;
+  const centreMatch = cleanText.match(centreAllotedPattern);
+  if (centreMatch && centreMatch[1]) {
+    let centreName = centreMatch[1].trim();
+    if (centreName.length > 10) {
+      return centreName;
     }
   }
 
-  for (const pattern of FALLBACK_PATTERNS) {
+  const addressPatterns = [
+    /Address\s*:\s*([A-Za-z0-9\s,.-]+)/i,
+    /Center\s*:\s*([A-Za-z0-9\s,.-]+)/i,
+    /Venue\s*:\s*([A-Za-z0-9\s,.-]+)/i,
+  ];
+
+  for (const pattern of addressPatterns) {
     const match = cleanText.match(pattern);
-    if (match) {
-      let code = match[1].trim() + match[2].trim();
-      code = code.replace(/[-_\s]/g, '');
-      logger.debug(`Matched fallback pattern: ${pattern}, code: ${code}`);
-      return code.toUpperCase();
+    if (match && match[1]) {
+      let extracted = match[1].trim();
+      if (extracted.length > 50) {
+        extracted = extracted.split('\n')[0].trim();
+      }
+      return extracted;
+    }
+  }
+
+  const keywords = ['school', 'college', 'academy', 'institute', 'campus', 'university', 'model town', 'high school'];
+  const lines = cleanText.split('\n');
+  for (const line of lines) {
+    const lowerLine = line.toLowerCase();
+    if (keywords.some(k => lowerLine.includes(k))) {
+      return line.trim();
     }
   }
 
   return null;
 };
 
-const isValidCenterCode = (code) => {
-  return /^[A-Z0-9]{3,10}$/.test(code);
-};
-
-// ==================== CONTROLLERS ====================
 
 const extractCenterCodeOCR = catchAsync(async (req, res) => {
   if (!req.file) {
@@ -94,30 +97,57 @@ const extractCenterCodeOCR = catchAsync(async (req, res) => {
 
   let extractedText = '';
   let centerCode = null;
+  let centerNameOrAddress = null;
   let confidence = 0;
 
   try {
     const result = await Tesseract.recognize(
       imageData,
       OCR_CONFIG.lang,
-      {
-        ...OCR_CONFIG.options,
-        logger: OCR_CONFIG.logger,
-      }
+      { ...OCR_CONFIG.options, logger: OCR_CONFIG.logger }
     );
 
     extractedText = result.data.text;
     confidence = result.data.confidence || 0;
 
-    logger.debug(`OCR Confidence: ${confidence}%`);
-    logger.debug(`Extracted Text: ${extractedText.substring(0, 500)}`);
+    logger.debug(`Extracted Text: ${extractedText.substring(0, 700)}`);
 
-    centerCode = extractCenterCode(extractedText);
+    centerNameOrAddress = extractCenterNameOrAddress(extractedText);
+
+    if (centerNameOrAddress) {
+      logger.info(`Extracted Center Name/Address: ${centerNameOrAddress}`);
+      const cleanName = centerNameOrAddress.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').trim();
+      const centerByName = await ExamCenter.findOne({
+        $or: [
+          { name: { $regex: cleanName, $options: 'i' } },
+          { address: { $regex: cleanName, $options: 'i' } },
+          { name: { $regex: cleanName.split(' ').slice(0, 4).join(' '), $options: 'i' } },
+        ],
+        isActive: true
+      });
+
+      if (centerByName) {
+        centerCode = centerByName.centerCode;
+        logger.info(`Center matched by Name/Address: ${centerByName.name} (${centerCode})`);
+      }
+    }
+
+    if (!centerCode) {
+      const centerAllotedMatch = extractedText.match(/CENTRE\s*ALLOTED\s*:?\s*\(?\s*(\d{3,5})\s*\)?/i);
+      if (centerAllotedMatch) {
+        const codeFromSlip = centerAllotedMatch[1];
+        const centerByCode = await ExamCenter.findOne({ centerCode: codeFromSlip, isActive: true });
+        if (centerByCode) {
+          centerCode = centerByCode.centerCode;
+          logger.info(`Center matched by Alloted Code: ${centerByCode.centerCode}`);
+        }
+      }
+    }
 
     if (!centerCode) {
       const rollNumberPatterns = [
-        /Roll\s*No\s*[:;]\s*([A-Z0-9\-]+)/i,
-        /Registration\s*No\s*[:;]\s*([A-Z0-9\-]+)/i,
+        /Roll\s*No\s*[:;]?\s*([A-Z0-9\-]+)/i,
+        /Registration\s*No\s*[:;]?\s*([A-Z0-9\-]+)/i,
       ];
 
       for (const pattern of rollNumberPatterns) {
@@ -125,26 +155,16 @@ const extractCenterCodeOCR = catchAsync(async (req, res) => {
         if (match) {
           const rollNumber = match[1].trim();
           const prefix = rollNumber.substring(0, 4);
+
           const center = await ExamCenter.findOne({
             centerCode: { $regex: `^${prefix}`, $options: 'i' },
+            isActive: true,
           });
+
           if (center) {
             centerCode = center.centerCode;
             break;
           }
-        }
-      }
-    }
-
-    if (!centerCode) {
-      const allCenters = await ExamCenter.find({ isActive: true })
-        .select('centerCode name')
-        .lean();
-
-      for (const center of allCenters) {
-        if (extractedText.includes(center.centerCode)) {
-          centerCode = center.centerCode;
-          break;
         }
       }
     }
@@ -154,11 +174,17 @@ const extractCenterCodeOCR = catchAsync(async (req, res) => {
     throw new AppError('Failed to process image. Please try again or use manual entry.', 500);
   }
 
+  // Final check
+  if (centerCode && BLOCKED_WORDS.includes(centerCode)) {
+    centerCode = null;
+  }
+
   if (!centerCode) {
     return res.status(404).json({
       success: false,
-      message: 'Center code not found in image. Please enter manually.',
+      message: 'Center not found in database. Please enter manually.',
       extractedText: extractedText.substring(0, 200),
+      centerNameOrAddress,
       confidence: Math.round(confidence),
     });
   }
@@ -172,15 +198,12 @@ const extractCenterCodeOCR = catchAsync(async (req, res) => {
     });
   }
 
-  const center = await ExamCenter.findOne({
-    centerCode,
-    isActive: true,
-  });
+  const center = await ExamCenter.findOne({ centerCode, isActive: true });
 
   if (!center) {
     return res.status(404).json({
       success: false,
-      message: 'Center not found in database. Please verify the code or enter manually.',
+      message: 'Center not found in database. Please enter manually.',
       centerCode,
       extractedText: extractedText.substring(0, 200),
     });
@@ -208,11 +231,7 @@ const extractCenterCodeOCR = catchAsync(async (req, res) => {
   });
 });
 
-/**
- * @desc    Manual center code search
- * @route   POST /api/ocr/manual-center
- * @access  Private (Student)
- */
+
 const manualCenterSearch = catchAsync(async (req, res) => {
   const { centerCode } = req.body;
 
@@ -220,7 +239,6 @@ const manualCenterSearch = catchAsync(async (req, res) => {
     throw new AppError('Please provide a center code', 400);
   }
 
-  // ✅ Convert to string, uppercase, and trim
   const code = String(centerCode).trim().toUpperCase();
 
   if (!isValidCenterCode(code)) {
@@ -296,7 +314,6 @@ const getCities = catchAsync(async (req, res) => {
   });
 });
 
-// ==================== EXPORT ====================
 module.exports = {
   extractCenterCode: extractCenterCodeOCR,
   manualCenterSearch,

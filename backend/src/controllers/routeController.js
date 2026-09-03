@@ -1,10 +1,9 @@
-// src/controllers/routeController.js - ✅ OSRM (Free - No Key)
+
 const axios = require('axios');
 const ExamCenter = require('../models/ExamCenter');
 const { AppError, catchAsync } = require('../utils/errorUtils');
 const logger = require('../utils/logger');
 
-// ==================== HELPER FUNCTIONS ====================
 
 const EARTH_RADIUS_KM = 6371;
 
@@ -54,7 +53,6 @@ const getRouteOSRM = async (originLat, originLng, destLat, destLng) => {
   };
 };
 
-// ==================== CONTROLLERS ====================
 
 const getRoute = catchAsync(async (req, res) => {
   const { originLat, originLng, destLat, destLng } = req.body;
@@ -72,7 +70,6 @@ const getRoute = catchAsync(async (req, res) => {
     });
   } catch (error) {
     logger.error('Route fetch error:', error);
-    // Fallback: Calculate straight-line distance
     const distance = calculateDistance(originLat, originLng, destLat, destLng);
     const estimatedDuration = distance * 2;
     res.status(200).json({
@@ -162,7 +159,6 @@ const geocodeAddress = catchAsync(async (req, res) => {
   }
 });
 
-// ==================== EXPORT ====================
 module.exports = {
   getRoute,
   getETA,

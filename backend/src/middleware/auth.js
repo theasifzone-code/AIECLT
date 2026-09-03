@@ -1,21 +1,15 @@
-// src/middleware/auth.js - ✅ COMPLETE FIXED VERSION
-
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// ✅ Protect middleware - CORRECT VERSION
 const protect = async (req, res, next) => {
   try {
     let token;
-
-    // ✅ Check if token exists in headers
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
     }
 
-    // ❌ If no token
     if (!token) {
-      console.log('❌ No token provided');
+      console.log('No token provided');
       return res.status(401).json({
         success: false,
         message: 'Not authorized, no token'
@@ -23,11 +17,9 @@ const protect = async (req, res, next) => {
     }
 
     try {
-      // ✅ Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      console.log('✅ Token verified for user:', decoded.id);
 
-      // ✅ Get user from database
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('Token verified for user:', decoded.id);
       const user = await User.findById(decoded.id).select('-password');
 
       if (!user) {
@@ -37,14 +29,11 @@ const protect = async (req, res, next) => {
         });
       }
 
-      // ✅ Attach user to request
       req.user = user;
-      
-      // ✅ IMPORTANT: Call next() to continue
       return next();
 
     } catch (error) {
-      console.error('❌ Token verification failed:', error.message);
+      console.error('Token verification failed:', error.message);
       return res.status(401).json({
         success: false,
         message: 'Not authorized, token failed'
@@ -52,7 +41,7 @@ const protect = async (req, res, next) => {
     }
 
   } catch (error) {
-    console.error('❌ Auth middleware error:', error);
+    console.error('Auth middleware error:', error);
     return res.status(500).json({
       success: false,
       message: 'Server error in auth middleware'
@@ -60,7 +49,6 @@ const protect = async (req, res, next) => {
   }
 };
 
-// ✅ Authorize middleware - Check roles
 const authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -81,7 +69,6 @@ const authorize = (...roles) => {
   };
 };
 
-// ✅ Admin middleware - Shortcut
 const admin = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
@@ -100,7 +87,6 @@ const admin = (req, res, next) => {
   return next();
 };
 
-// ✅ Board Official middleware
 const boardOfficial = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
@@ -119,11 +105,7 @@ const boardOfficial = (req, res, next) => {
   return next();
 };
 
-console.log('✅ auth.js middleware loaded');
-console.log('  - protect:', typeof protect);
-console.log('  - authorize:', typeof authorize);
-console.log('  - admin:', typeof admin);
-console.log('  - boardOfficial:', typeof boardOfficial);
+
 
 module.exports = {
   protect,

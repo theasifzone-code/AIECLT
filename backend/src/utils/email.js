@@ -13,7 +13,7 @@ const transporter = nodemailer.createTransport({
 
 const sendEmail = async ({ email, subject, template, data }) => {
   try {
-    // Simple HTML template
+
     let html = `
       <h1>${subject}</h1>
       <p>Hello ${data.name || 'User'},</p>

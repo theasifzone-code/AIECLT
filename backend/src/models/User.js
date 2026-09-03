@@ -1,4 +1,4 @@
-// src/models/User.js - ✅ FIXED FOR MONGOOSE 7+
+
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
@@ -11,7 +11,6 @@ const UserSchema = new mongoose.Schema(
       trim: true,
       minlength: [2, 'Name must be at least 2 characters'],
       maxlength: [50, 'Name cannot exceed 50 characters'],
-      // ✅ NO index: true HERE
     },
     email: {
       type: String,
@@ -19,7 +18,6 @@ const UserSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      // ✅ NO index: true HERE
       match: [
         /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
         'Please add a valid email',
@@ -35,17 +33,20 @@ const UserSchema = new mongoose.Schema(
       type: String,
       enum: ['student', 'board_official', 'admin'],
       default: 'student',
-      // ✅ NO index: true HERE
     },
     country: {
       type: String,
       default: 'Pakistan',
       trim: true,
     },
+    registeredSchedules: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Schedule',
+      default: [],
+    }],
     isActive: {
       type: Boolean,
       default: true,
-      // ✅ NO index: true HERE
     },
     isEmailVerified: {
       type: Boolean,
@@ -92,7 +93,6 @@ const UserSchema = new mongoose.Schema(
     deletedAt: {
       type: Date,
       default: null,
-      // ✅ NO index: true HERE
     },
   },
   {
@@ -102,13 +102,14 @@ const UserSchema = new mongoose.Schema(
   }
 );
 
-// ==================== ✅ ALL INDEXES HERE ====================
+
 // UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1 });
 UserSchema.index({ isActive: 1 });
 UserSchema.index({ deletedAt: 1 });
+UserSchema.index({ registeredSchedules: 1 }); 
 
-// ==================== VIRTUAL FIELDS ====================
+
 UserSchema.virtual('isLocked').get(function () {
   return this.lockUntil && this.lockUntil > Date.now();
 });
@@ -117,30 +118,28 @@ UserSchema.virtual('isDeleted').get(function () {
   return this.deletedAt !== null;
 });
 
-// ==================== PRE-SAVE HOOK (FIXED) ====================
-// ✅ `next` parameter hata diya gaya hai aur async/await use kiya gaya hai
+
 UserSchema.pre('save', async function () {
   if (!this.isModified('password')) {
-    return; // ✅ Sirf return karein, next() nahi
+    return;
   }
 
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
-    // ✅ next() call nahi karna, save automatic proceed hoga
   } catch (error) {
-    console.error('❌ Password hashing error:', error);
-    throw error; // ✅ Error ko throw karein taake Mongoose use pakde
+    console.error(' Password hashing error:', error);
+    throw error;
   }
 });
 
-// ==================== INSTANCE METHODS ====================
+
 
 UserSchema.methods.comparePassword = async function (enteredPassword) {
   try {
     return await bcrypt.compare(enteredPassword, this.password);
   } catch (error) {
-    console.error('❌ Password comparison error:', error);
+    console.error('Password comparison error:', error);
     return false;
   }
 };
@@ -189,7 +188,13 @@ UserSchema.methods.restore = async function () {
   await this.save();
 };
 
-// ==================== STATIC METHODS ====================
+
+UserSchema.methods.isRegisteredForSchedule = function (scheduleId) {
+  return this.registeredSchedules && 
+         this.registeredSchedules.some(id => id.toString() === scheduleId.toString());
+};
+
+
 
 UserSchema.statics.findByEmail = function (email, includePassword = false) {
   const query = this.findOne({ email: email.toLowerCase() });
@@ -207,5 +212,13 @@ UserSchema.statics.findByRole = function (role) {
   return this.find({ role, isActive: true, deletedAt: null });
 };
 
-// ==================== EXPORT ====================
+UserSchema.statics.findByRegisteredSchedule = function (scheduleId) {
+  return this.find({
+    registeredSchedules: scheduleId,
+    isActive: true,
+    deletedAt: null
+  });
+};
+
+
 module.exports = mongoose.model('User', UserSchema);

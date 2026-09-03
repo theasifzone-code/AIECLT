@@ -1,22 +1,41 @@
-// App.jsx - ✅ FIXED (Header Sirf Public Routes Par)
+
 import React, { useState } from 'react';
-import { ThemeProvider } from './context/ThemeContext';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+
+// Components
 import Header from './components/Header';
 import Hero from './components/Hero';
-import Stats from './components/Stats';
 import Testimonials from './components/Testimonials';
 import CTASection from './components/CTASection';
-import StudentPortal from './components/StudentPortal';
-import BoardOfficialDashboard from './components/BoardOfficialDashboard';
-import SuperAdminDashboard from './components/SuperAdminDashboard';
 import Footer from './components/Footer';
 import Login from './components/Login';
 import Register from './components/Register';
+
+// Pages
+import StudentPortal from './pages/StudentPortal';
+import BoardOfficialDashboard from './pages/BoardOfficialDashboard';
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import About from './pages/About';
 import Contact from './pages/Contact';
-import Features from './pages/Features';
+import Features from './components/Features';
+
+function ProtectedRoute({ children, allowedRoles }) {
+  const { user, loading } = useAuth();
+
+  if (loading) return null; 
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
 
 // Main App Content
 function AppContent() {
@@ -27,15 +46,15 @@ function AppContent() {
 
   const handleLogin = async (formData) => {
     const result = await login(formData);
-    
-    if (result.success) {
+
+    if (result?.success) {
       const loggedInUser = result.user || result.data?.user;
       if (loggedInUser?.role === 'admin') {
-        navigate('/admin');
+        navigate('/admin', { replace: true });
       } else if (loggedInUser?.role === 'board_official') {
-        navigate('/board');
+        navigate('/board', { replace: true });
       } else {
-        navigate('/student');
+        navigate('/student', { replace: true });
       }
     }
     return result;
@@ -43,18 +62,13 @@ function AppContent() {
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate('/', { replace: true });
   };
 
-  const hasAccess = (allowedRoles) => {
-    if (!user) return false;
-    return allowedRoles.includes(user.role);
-  };
 
-  // ✅ Header/Footer Sirf Public Routes par Dikhega
-  const isPublicRoute = ['/', '/login', '/register', '/about', '/features', '/contact'].includes(location.pathname);
+  const publicRoutes = ['/', '/login', '/register', '/about', '/features', '/contact'];
+  const isPublicRoute = publicRoutes.includes(location.pathname);
 
-  // ✅ Agar loading hai, toh loading screen dikhao
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
@@ -67,43 +81,48 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      {/* ✅ Header Sirf Public Routes par Dikhega */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
       {isPublicRoute && (
         <Header activeSection={activeSection} setActiveSection={setActiveSection} user={user} onLogout={handleLogout} />
       )}
 
       <Routes>
-        {/* 🔓 PUBLIC ROUTES */}
+        {/* PUBLIC ROUTES */}
         <Route path="/" element={
           <>
             <Hero onNavigate={setActiveSection} user={user} />
-            <Stats />
             <Features />
             <Testimonials />
             <CTASection onNavigate={setActiveSection} user={user} />
-            <Footer activeSection={activeSection} setActiveSection={setActiveSection} />
           </>
         } />
         <Route path="/login" element={<Login onLogin={handleLogin} />} />
         <Route path="/register" element={<Register />} />
         <Route path="/about" element={<About />} />
-        <Route path="/features" element={<Features/>} />
+        <Route path="/features" element={<Features />} />
         <Route path="/contact" element={<Contact />} />
 
-        {/* 🔐 PRIVATE ROUTES (No Header/Footer) */}
+        {/* PRIVATE / PROTECTED ROUTES */}
         <Route path="/student" element={
-          hasAccess(['student', 'board_official']) ? <StudentPortal /> : <Navigate to="/login" />
+          <ProtectedRoute allowedRoles={['student', 'board_official', 'admin']}>
+            <StudentPortal />
+          </ProtectedRoute>
         } />
         <Route path="/board" element={
-          hasAccess(['board_official', 'admin']) ? <BoardOfficialDashboard /> : <Navigate to="/login" />
+          <ProtectedRoute allowedRoles={['board_official', 'admin']}>
+            <BoardOfficialDashboard />
+          </ProtectedRoute>
         } />
         <Route path="/admin" element={
-          hasAccess(['admin']) ? <SuperAdminDashboard /> : <Navigate to="/login" />
+          <ProtectedRoute allowedRoles={['admin']}>
+            <SuperAdminDashboard />
+          </ProtectedRoute>
         } />
+
+        {/* Catch-all Route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {/* ✅ Footer Sirf Public Routes par Dikhega */}
       {isPublicRoute && (
         <Footer activeSection={activeSection} setActiveSection={setActiveSection} />
       )}
@@ -111,8 +130,8 @@ function AppContent() {
   );
 }
 
-// ✅ Main App - Router + ThemeProvider + AuthProvider
-function App() {
+// Main App Component
+export default function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
@@ -123,5 +142,3 @@ function App() {
     </BrowserRouter>
   );
 }
-
-export default App;

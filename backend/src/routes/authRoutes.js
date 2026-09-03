@@ -1,4 +1,4 @@
-// src/routes/authRoutes.js - ✅ Production Level Code
+
 const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
@@ -17,11 +17,7 @@ const {
 const { protect } = require('../middleware/auth');
 const { validateRequest } = require('../middleware/validator');
 
-// ==================== VALIDATION RULES ====================
 
-/**
- * Registration validation rules
- */
 const registerValidation = [
   body('name')
     .trim()
@@ -55,9 +51,7 @@ const registerValidation = [
     .matches(/^\+?[0-9]{10,15}$/).withMessage('Please provide a valid phone number'),
 ];
 
-/**
- * Login validation rules
- */
+
 const loginValidation = [
   body('email')
     .trim()
@@ -69,9 +63,7 @@ const loginValidation = [
     .notEmpty().withMessage('Password is required'),
 ];
 
-/**
- * Update profile validation rules
- */
+
 const updateProfileValidation = [
   body('name')
     .optional()
@@ -94,9 +86,7 @@ const updateProfileValidation = [
     .isObject().withMessage('Preferences must be an object'),
 ];
 
-/**
- * Change password validation rules
- */
+
 const changePasswordValidation = [
   body('currentPassword')
     .notEmpty().withMessage('Current password is required'),
@@ -107,9 +97,7 @@ const changePasswordValidation = [
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
 ];
 
-/**
- * Forgot password validation rules
- */
+
 const forgotPasswordValidation = [
   body('email')
     .trim()
@@ -118,9 +106,7 @@ const forgotPasswordValidation = [
     .normalizeEmail(),
 ];
 
-/**
- * Reset password validation rules
- */
+
 const resetPasswordValidation = [
   body('password')
     .notEmpty().withMessage('Password is required')
@@ -128,13 +114,7 @@ const resetPasswordValidation = [
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
 ];
 
-// ==================== ROUTES ====================
 
-/**
- * @route   POST /api/auth/register
- * @desc    Register a new user
- * @access  Public
- */
 router.post(
   '/register',
   registerValidation,
@@ -142,11 +122,7 @@ router.post(
   register
 );
 
-/**
- * @route   POST /api/auth/login
- * @desc    Login user
- * @access  Public
- */
+
 router.post(
   '/login',
   loginValidation,
@@ -154,25 +130,12 @@ router.post(
   login
 );
 
-/**
- * @route   POST /api/auth/logout
- * @desc    Logout user
- * @access  Private
- */
+
 router.post('/logout', protect, logout);
 
-/**
- * @route   GET /api/auth/me
- * @desc    Get current user profile
- * @access  Private
- */
+
 router.get('/me', protect, getMe);
 
-/**
- * @route   PUT /api/auth/update-profile
- * @desc    Update user profile
- * @access  Private
- */
 router.put(
   '/update-profile',
   protect,
@@ -181,11 +144,7 @@ router.put(
   updateProfile
 );
 
-/**
- * @route   PUT /api/auth/change-password
- * @desc    Change password
- * @access  Private
- */
+
 router.put(
   '/change-password',
   protect,
@@ -194,11 +153,7 @@ router.put(
   changePassword
 );
 
-/**
- * @route   POST /api/auth/forgot-password
- * @desc    Send password reset email
- * @access  Public
- */
+
 router.post(
   '/forgot-password',
   forgotPasswordValidation,
@@ -206,11 +161,7 @@ router.post(
   forgotPassword
 );
 
-/**
- * @route   POST /api/auth/reset-password/:token
- * @desc    Reset password with token
- * @access  Public
- */
+
 router.post(
   '/reset-password/:token',
   resetPasswordValidation,
@@ -218,32 +169,19 @@ router.post(
   resetPassword
 );
 
-/**
- * @route   GET /api/auth/verify-email/:token
- * @desc    Verify email
- * @access  Public
- */
+
 router.get('/verify-email/:token', verifyEmail);
 
-/**
- * @route   POST /api/auth/resend-verification
- * @desc    Resend verification email
- * @access  Private
- */
+
 router.post('/resend-verification', protect, resendVerification);
 
-/**
- * @route   POST /api/auth/refresh-token
- * @desc    Refresh JWT token (optional)
- * @access  Private
- */
+
 router.post('/refresh-token', protect, (req, res) => {
-  // This would be implemented if using refresh tokens
   res.status(200).json({
     success: true,
     message: 'Token refresh endpoint',
   });
 });
 
-// ==================== EXPORT ====================
+
 module.exports = router;

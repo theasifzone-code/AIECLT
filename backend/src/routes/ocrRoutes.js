@@ -1,4 +1,4 @@
-// src/routes/ocrRoutes.js - ✅ Production Level Code
+
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -12,12 +12,8 @@ const {
   getCities,
 } = require('../controllers/ocrController');
 
-// ==================== MULTER CONFIGURATION ====================
 
-/**
- * File upload configuration
- */
-const FILE_SIZE_LIMIT = 5 * 1024 * 1024; // 5MB
+const FILE_SIZE_LIMIT = 5 * 1024 * 1024; 
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
   'image/png',
@@ -52,11 +48,7 @@ const upload = multer({
   fileFilter,
 });
 
-// ==================== VALIDATION RULES ====================
 
-/**
- * Manual center search validation
- */
 const manualSearchValidation = [
   body('centerCode')
     .trim()
@@ -69,9 +61,7 @@ const manualSearchValidation = [
     .toUpperCase(),
 ];
 
-/**
- * Get centers list validation
- */
+
 const getCentersListValidation = [
   query('search')
     .optional()
@@ -91,11 +81,7 @@ const getCentersListValidation = [
     .withMessage('Limit must be between 1 and 100'),
 ];
 
-// ==================== ERROR HANDLING MIDDLEWARE ====================
 
-/**
- * Multer error handler
- */
 const handleMulterError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'FILE_TOO_LARGE') {
@@ -132,13 +118,7 @@ const handleMulterError = (err, req, res, next) => {
   next(err);
 };
 
-// ==================== ROUTES ====================
 
-/**
- * @route   POST /api/ocr/extract-center
- * @desc    Extract center code using OCR
- * @access  Private (Student)
- */
 router.post(
   '/extract-center',
   protect,
@@ -164,11 +144,7 @@ router.post(
   extractCenterCode
 );
 
-/**
- * @route   POST /api/ocr/manual-center
- * @desc    Manual center code search
- * @access  Private (Student)
- */
+
 router.post(
   '/manual-center',
   protect,
@@ -177,11 +153,7 @@ router.post(
   manualCenterSearch
 );
 
-/**
- * @route   GET /api/ocr/centers
- * @desc    Get all centers for student search
- * @access  Private (Student)
- */
+
 router.get(
   '/centers',
   protect,
@@ -190,22 +162,14 @@ router.get(
   getCentersList
 );
 
-/**
- * @route   GET /api/ocr/cities
- * @desc    Get all cities with centers
- * @access  Private (Student)
- */
+
 router.get(
   '/cities',
   protect,
   getCities
 );
 
-/**
- * @route   POST /api/ocr/upload
- * @desc    Upload image for OCR (alternative endpoint)
- * @access  Private (Student)
- */
+
 router.post(
   '/upload',
   protect,
@@ -225,7 +189,6 @@ router.post(
       });
     }
 
-    // This can be used for general image upload
     res.status(200).json({
       success: true,
       message: 'Image uploaded successfully',
@@ -238,5 +201,4 @@ router.post(
   }
 );
 
-// ==================== EXPORT ====================
 module.exports = router;

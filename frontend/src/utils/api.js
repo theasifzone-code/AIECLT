@@ -1,19 +1,18 @@
-// src/utils/api.js - ✅ Production Level Code
+
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-// ==================== API CONFIGURATION ====================
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // ==================== CREATE AXIOS INSTANCE ====================
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 30000, // 30 seconds timeout
+  timeout: 30000, 
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  withCredentials: true, // For cookies if needed
+  withCredentials: true, 
 });
 
 // ==================== REQUEST INTERCEPTOR ====================
@@ -27,13 +26,13 @@ api.interceptors.request.use(
 
     // Log request in development
     if (import.meta.env.DEV) {
-      console.log(`🚀 ${config.method?.toUpperCase()} ${config.url}`, config.data || '');
+      console.log(`${config.method?.toUpperCase()} ${config.url}`, config.data || '');
     }
 
     return config;
   },
   (error) => {
-    console.error('❌ Request Interceptor Error:', error);
+    console.error('Request Interceptor Error:', error);
     return Promise.reject(error);
   }
 );
@@ -41,9 +40,8 @@ api.interceptors.request.use(
 // ==================== RESPONSE INTERCEPTOR ====================
 api.interceptors.response.use(
   (response) => {
-    // Log response in development
     if (import.meta.env.DEV) {
-      console.log(`✅ ${response.config.method?.toUpperCase()} ${response.config.url}`, response.data);
+      console.log(`${response.config.method?.toUpperCase()} ${response.config.url}`, response.data);
     }
     return response;
   },
@@ -124,12 +122,7 @@ api.getWithParams = async (url, params = {}) => {
   }
 };
 
-/**
- * POST request with error handling
- * @param {string} url - Endpoint URL
- * @param {Object} data - Request body
- * @returns {Promise} - Axios response
- */
+
 api.postWithData = async (url, data = {}) => {
   try {
     const response = await api.post(url, data);
@@ -139,12 +132,7 @@ api.postWithData = async (url, data = {}) => {
   }
 };
 
-/**
- * PUT request with error handling
- * @param {string} url - Endpoint URL
- * @param {Object} data - Request body
- * @returns {Promise} - Axios response
- */
+
 api.putWithData = async (url, data = {}) => {
   try {
     const response = await api.put(url, data);
@@ -154,11 +142,7 @@ api.putWithData = async (url, data = {}) => {
   }
 };
 
-/**
- * DELETE request with error handling
- * @param {string} url - Endpoint URL
- * @returns {Promise} - Axios response
- */
+
 api.deleteWithData = async (url) => {
   try {
     const response = await api.delete(url);
@@ -168,18 +152,15 @@ api.deleteWithData = async (url) => {
   }
 };
 
-/**
- * Upload file with progress
- * @param {string} url - Endpoint URL
- * @param {FormData} formData - Form data with file
- * @param {Function} onProgress - Progress callback
- * @returns {Promise} - Axios response
- */
+
 api.uploadFile = async (url, formData, onProgress = null) => {
   try {
-    const response = await api.post(url, formData, {
+    const token = localStorage.getItem('token');
+    const response = await axios.post(`${API_URL}${url}`, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+
+        'Authorization': token ? `Bearer ${token}` : '',
+        'Content-Type': undefined, 
       },
       onUploadProgress: (progressEvent) => {
         if (onProgress) {
@@ -194,18 +175,12 @@ api.uploadFile = async (url, formData, onProgress = null) => {
   }
 };
 
-/**
- * Check if user is authenticated
- * @returns {boolean} - True if authenticated
- */
+
 api.isAuthenticated = () => {
   return !!localStorage.getItem('token');
 };
 
-/**
- * Get current user from localStorage
- * @returns {Object|null} - User object or null
- */
+
 api.getCurrentUser = () => {
   try {
     const user = localStorage.getItem('user');
@@ -215,10 +190,7 @@ api.getCurrentUser = () => {
   }
 };
 
-/**
- * Set auth token
- * @param {string} token - JWT token
- */
+
 api.setAuthToken = (token) => {
   if (token) {
     localStorage.setItem('token', token);
@@ -229,9 +201,7 @@ api.setAuthToken = (token) => {
   }
 };
 
-/**
- * Clear auth data
- */
+
 api.clearAuth = () => {
   localStorage.removeItem('token');
   localStorage.removeItem('user');

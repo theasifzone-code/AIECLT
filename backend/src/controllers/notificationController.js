@@ -1,16 +1,10 @@
-// src/controllers/notificationController.js - ✅ FINAL FIXED
+
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const { AppError, catchAsync } = require('../utils/errorUtils');
 const logger = require('../utils/logger');
 
-// ==================== ADMIN / BOARD OFFICIAL FUNCTIONS ====================
 
-/**
- * @desc    Send a notification (Admin/Board Official)
- * @route   POST /api/admin/notifications
- * @access  Private (Admin/Board Official)
- */
 const sendNotification = catchAsync(async (req, res) => {
   const { title, message, targetRole, targetUserIds, type, priority, expiryDate, scheduledAt, link } = req.body;
 
@@ -19,7 +13,6 @@ const sendNotification = catchAsync(async (req, res) => {
     throw new AppError('Please provide title and message', 400);
   }
 
-  // ✅ SECURITY CHECK: Board Official sirf Students ko hi notification bhej sakta hai
   if (req.user.role === 'board_official') {
     const allowedRoles = ['all', 'students'];
     if (!allowedRoles.includes(targetRole)) {
@@ -27,29 +20,25 @@ const sendNotification = catchAsync(async (req, res) => {
     }
   }
 
-  // ✅ Fix: Valid target roles map karein
+ 
   const validRoles = ['all', 'students', 'board_official', 'admin'];
   
   let finalTargetRole = targetRole || 'all';
   
-  // Agar 'student' (singular) aaye, toh 'students' (plural) mein convert karein
   if (finalTargetRole === 'student') {
     finalTargetRole = 'students';
   }
   
-  // Agar invalid role hai, toh default 'all' set karein
   if (!validRoles.includes(finalTargetRole)) {
     finalTargetRole = 'all';
   }
 
-  // Determine target users
   let targetUsers = [];
 
   if (targetUserIds && targetUserIds.length > 0) {
-    // Specific users selected
+
     targetUsers = targetUserIds;
   } else if (finalTargetRole && finalTargetRole !== 'all') {
-    // Get all users with that role
     const users = await User.find({
       role: finalTargetRole,
       isActive: true,
@@ -58,7 +47,6 @@ const sendNotification = catchAsync(async (req, res) => {
     targetUsers = users.map((u) => u._id);
   }
 
-  // For 'all', we leave targetUsers empty and let it broadcast
   const notification = await Notification.create({
     title,
     message,
@@ -76,9 +64,6 @@ const sendNotification = catchAsync(async (req, res) => {
     },
   });
 
-  // If scheduled for later, don't set sentAt yet (pre-save hook handles this)
-  // Otherwise, the pre-save hook automatically sets sentAt
-
   logger.info(`Notification sent: "${title}" by ${req.user.email} to ${finalTargetRole}`);
 
   res.status(201).json({
@@ -87,11 +72,7 @@ const sendNotification = catchAsync(async (req, res) => {
   });
 });
 
-/**
- * @desc    Get all notifications (Admin/Board Official)
- * @route   GET /api/admin/notifications
- * @access  Private (Admin/Board Official)
- */
+
 const getAdminNotifications = catchAsync(async (req, res) => {
   const { page = 1, limit = 50, type = '', priority = '', isActive = '', status = '' } = req.query;
 
@@ -101,7 +82,6 @@ const getAdminNotifications = catchAsync(async (req, res) => {
   if (priority) query.priority = priority;
   if (isActive !== '') query.isActive = isActive === 'true';
   
-  // Filter by scheduled vs sent
   if (status === 'scheduled') {
     query.sentAt = null;
     query.scheduledAt = { $ne: null };
@@ -129,11 +109,7 @@ const getAdminNotifications = catchAsync(async (req, res) => {
   });
 });
 
-/**
- * @desc    Get single notification by ID (Admin/Board Official)
- * @route   GET /api/admin/notifications/:id
- * @access  Private (Admin/Board Official)
- */
+
 const getAdminNotificationById = catchAsync(async (req, res) => {
   const notification = await Notification.findById(req.params.id)
     .populate('sentBy', 'name email')
@@ -149,11 +125,7 @@ const getAdminNotificationById = catchAsync(async (req, res) => {
   });
 });
 
-/**
- * @desc    Soft delete a notification (Admin/Board Official)
- * @route   DELETE /api/admin/notifications/:id
- * @access  Private (Admin/Board Official)
- */
+
 const deleteNotification = catchAsync(async (req, res) => {
   const notification = await Notification.findById(req.params.id);
 
@@ -171,11 +143,7 @@ const deleteNotification = catchAsync(async (req, res) => {
   });
 });
 
-/**
- * @desc    Update a notification (Admin/Board Official)
- * @route   PUT /api/admin/notifications/:id
- * @access  Private (Admin/Board Official)
- */
+
 const updateNotification = catchAsync(async (req, res) => {
   const notification = await Notification.findById(req.params.id);
 
@@ -210,26 +178,27 @@ const updateNotification = catchAsync(async (req, res) => {
   });
 });
 
-// ==================== USER SIDE FUNCTIONS ====================
 
-/**
- * @desc    Get notifications for logged-in user (Student/Board Official)
- * @route   GET /api/notifications/my
- * @access  Private
- */
+
 const getMyNotifications = catchAsync(async (req, res) => {
   const { page = 1, limit = 20 } = req.query;
   const userId = req.user.id;
 
+  console.log('Fetching notifications for user:', userId);
+
   const query = {
     isActive: true,
     isDeleted: false,
-    sentAt: { $ne: null }, // Only delivered notifications
+    sentAt: { $ne: null },
     $or: [
       { targetRole: 'all' },
+      { targetRole: 'students' }, 
       { targetUsers: userId },
+      { targetUsers: { $in: [userId] } }, 
     ],
   };
+
+  console.log('Query:', JSON.stringify(query, null, 2));
 
   const [notifications, total] = await Promise.all([
     Notification.find(query)
@@ -239,6 +208,8 @@ const getMyNotifications = catchAsync(async (req, res) => {
       .lean(),
     Notification.countDocuments(query),
   ]);
+
+  console.log(`Found ${notifications.length} notifications`);
 
   res.status(200).json({
     success: true,
@@ -250,15 +221,22 @@ const getMyNotifications = catchAsync(async (req, res) => {
   });
 });
 
-/**
- * @desc    Get unread notification count for logged-in user
- * @route   GET /api/notifications/unread-count
- * @access  Private
- */
+
 const getUnreadCount = catchAsync(async (req, res) => {
   const userId = req.user.id;
 
-  const unreadCount = await Notification.countUnreadForUser(userId);
+  const unreadCount = await Notification.countDocuments({
+    isActive: true,
+    isDeleted: false,
+    sentAt: { $ne: null },
+    $or: [
+      { targetRole: 'all' },
+      { targetRole: 'students' },
+      { targetUsers: userId },
+      { targetUsers: { $in: [userId] } },
+    ],
+    readBy: { $not: { $elemMatch: { userId } } },
+  });
 
   res.status(200).json({
     success: true,
@@ -266,11 +244,7 @@ const getUnreadCount = catchAsync(async (req, res) => {
   });
 });
 
-/**
- * @desc    Mark a notification as read by logged-in user
- * @route   PUT /api/notifications/:id/read
- * @access  Private
- */
+
 const markAsRead = catchAsync(async (req, res) => {
   const notification = await Notification.findById(req.params.id);
 
@@ -278,9 +252,9 @@ const markAsRead = catchAsync(async (req, res) => {
     throw new AppError('Notification not found', 404);
   }
 
-  // Check if user has access to this notification
   const hasAccess = 
     notification.targetRole === 'all' || 
+    notification.targetRole === 'students' || 
     notification.targetUsers.some((u) => u.toString() === req.user.id.toString());
 
   if (!hasAccess) {
@@ -295,24 +269,22 @@ const markAsRead = catchAsync(async (req, res) => {
   });
 });
 
-/**
- * @desc    Mark all notifications as read for logged-in user
- * @route   PUT /api/notifications/read-all
- * @access  Private
- */
+
 const markAllAsRead = catchAsync(async (req, res) => {
   const userId = req.user.id;
-
-  // Find all unread notifications for this user
   const notifications = await Notification.find({
     isActive: true,
     isDeleted: false,
     sentAt: { $ne: null },
-    $or: [{ targetRole: 'all' }, { targetUsers: userId }],
+    $or: [
+      { targetRole: 'all' },
+      { targetRole: 'students' }, 
+      { targetUsers: userId },
+      { targetUsers: { $in: [userId] } },
+    ],
     readBy: { $not: { $elemMatch: { userId } } },
   });
 
-  // Mark each as read
   for (const notification of notifications) {
     await notification.markAsRead(userId);
   }
@@ -324,7 +296,7 @@ const markAllAsRead = catchAsync(async (req, res) => {
   });
 });
 
-// ==================== EXPORT ====================
+
 module.exports = {
   // Admin functions
   sendNotification,

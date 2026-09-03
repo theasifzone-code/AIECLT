@@ -1,4 +1,3 @@
-// src/controllers/authController.js - ✅ Production Level Code
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
@@ -6,12 +5,7 @@ const { sendEmail } = require('../utils/email');
 const { AppError, catchAsync } = require('../utils/errorUtils');
 const logger = require('../utils/logger');
 
-/**
- * Generate JWT Token
- * @param {string} id - User ID
- * @param {string} role - User role
- * @returns {string} - JWT Token
- */
+
 const generateToken = (id, role) => {
   return jwt.sign(
     { id, role },
@@ -24,12 +18,6 @@ const generateToken = (id, role) => {
   );
 };
 
-/**
- * Send token response
- * @param {Object} user - User object
- * @param {number} statusCode - HTTP status code
- * @param {Object} res - Express response object
- */
 const sendTokenResponse = (user, statusCode, res) => {
   const token = generateToken(user._id, user.role);
 
@@ -45,7 +33,6 @@ const sendTokenResponse = (user, statusCode, res) => {
     profileImage: user.profileImage,
   };
 
-  // Set cookie (optional - for production)
   const cookieOptions = {
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     httpOnly: true,
@@ -62,11 +49,7 @@ const sendTokenResponse = (user, statusCode, res) => {
   });
 };
 
-/**
- * @desc    Register a new user
- * @route   POST /api/auth/register
- * @access  Public
- */
+
 const register = catchAsync(async (req, res) => {
   const { name, email, password, role, country, phone } = req.body;
 
@@ -87,7 +70,6 @@ const register = catchAsync(async (req, res) => {
     isEmailVerified: false,
   });
 
-  // Send welcome email (async - don't wait)
   try {
     await sendEmail({
       email: user.email,
@@ -102,7 +84,6 @@ const register = catchAsync(async (req, res) => {
     });
   } catch (emailError) {
     logger.error('Welcome email failed:', emailError);
-    // Don't fail registration if email fails
   }
 
   logger.info(`User registered: ${user.email} (${user.role})`);
@@ -110,58 +91,40 @@ const register = catchAsync(async (req, res) => {
   sendTokenResponse(user, 201, res);
 });
 
-/**
- * @desc    Login user
- * @route   POST /api/auth/login
- * @access  Public
- */
+
 const login = catchAsync(async (req, res) => {
   const { email, password } = req.body;
-
-  // Validate email and password
   if (!email || !password) {
     throw new AppError('Please provide email and password', 400);
   }
-
-  // Find user with password field
   const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
 
   if (!user) {
     throw new AppError('Invalid credentials', 401);
   }
 
-  // Check if account is locked
   if (user.isAccountLocked && user.isAccountLocked()) {
     throw new AppError(
       'Account is locked due to too many failed login attempts. Please try again after 30 minutes.',
       401
     );
   }
-
-  // Check if account is active
   if (!user.isActive) {
     throw new AppError('Account is deactivated. Please contact admin.', 401);
   }
 
-  // Check if account is soft deleted
   if (user.isDeleted) {
     throw new AppError('Account has been deleted. Please contact admin.', 401);
   }
-
-  // Check password
   const isMatch = await user.comparePassword(password);
 
   if (!isMatch) {
-    // Increment login attempts
     await user.incrementLoginAttempts();
     logger.warn(`Failed login attempt for: ${email}`);
     throw new AppError('Invalid credentials', 401);
   }
 
-  // Reset login attempts on successful login
   await user.resetLoginAttempts();
-
-  // Update last login
   user.lastLogin = new Date();
   user.metadata = {
     ...user.metadata,
@@ -176,11 +139,7 @@ const login = catchAsync(async (req, res) => {
   sendTokenResponse(user, 200, res);
 });
 
-/**
- * @desc    Get current user profile
- * @route   GET /api/auth/me
- * @access  Private
- */
+
 const getMe = catchAsync(async (req, res) => {
   const user = await User.findById(req.user.id)
     .select('-password -resetPasswordToken -resetPasswordExpire');
@@ -195,11 +154,7 @@ const getMe = catchAsync(async (req, res) => {
   });
 });
 
-/**
- * @desc    Update user profile
- * @route   PUT /api/auth/update-profile
- * @access  Private
- */
+
 const updateProfile = catchAsync(async (req, res) => {
   const { name, country, phone, preferences } = req.body;
 
@@ -230,11 +185,7 @@ const updateProfile = catchAsync(async (req, res) => {
   });
 });
 
-/**
- * @desc    Change password
- * @route   PUT /api/auth/change-password
- * @access  Private
- */
+
 const changePassword = catchAsync(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
@@ -246,20 +197,17 @@ const changePassword = catchAsync(async (req, res) => {
     throw new AppError('New password must be at least 6 characters', 400);
   }
 
-  // Get user with password
   const user = await User.findById(req.user.id).select('+password');
 
   if (!user) {
     throw new AppError('User not found', 404);
   }
 
-  // Check current password
   const isMatch = await user.comparePassword(currentPassword);
   if (!isMatch) {
     throw new AppError('Current password is incorrect', 401);
   }
 
-  // Update password
   user.password = newPassword;
   await user.save();
 
@@ -271,11 +219,6 @@ const changePassword = catchAsync(async (req, res) => {
   });
 });
 
-/**
- * @desc    Forgot password - Send reset token
- * @route   POST /api/auth/forgot-password
- * @access  Public
- */
 const forgotPassword = catchAsync(async (req, res) => {
   const { email } = req.body;
 
@@ -286,18 +229,15 @@ const forgotPassword = catchAsync(async (req, res) => {
   const user = await User.findOne({ email: email.toLowerCase() });
 
   if (!user) {
-    // Don't reveal if user exists for security
     return res.status(200).json({
       success: true,
       message: 'If an account exists with this email, a reset link has been sent.',
     });
   }
 
-  // Generate reset token
   const resetToken = user.generateResetToken();
   await user.save();
 
-  // Send email (async)
   try {
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
     
@@ -314,7 +254,6 @@ const forgotPassword = catchAsync(async (req, res) => {
 
     logger.info(`Password reset email sent to: ${user.email}`);
   } catch (emailError) {
-    // Reset token fields if email fails
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
     await user.save();
@@ -328,11 +267,7 @@ const forgotPassword = catchAsync(async (req, res) => {
   });
 });
 
-/**
- * @desc    Reset password with token
- * @route   POST /api/auth/reset-password/:token
- * @access  Public
- */
+
 const resetPassword = catchAsync(async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
@@ -345,7 +280,6 @@ const resetPassword = catchAsync(async (req, res) => {
     throw new AppError('Password must be at least 6 characters', 400);
   }
 
-  // Hash the token
   const resetPasswordToken = crypto
     .createHash('sha256')
     .update(token)
@@ -375,11 +309,7 @@ const resetPassword = catchAsync(async (req, res) => {
   });
 });
 
-/**
- * @desc    Logout user
- * @route   POST /api/auth/logout
- * @access  Private
- */
+
 const logout = async (req, res) => {
   // Clear cookie if used
   res.clearCookie('token');
@@ -390,11 +320,7 @@ const logout = async (req, res) => {
   });
 };
 
-/**
- * @desc    Verify email
- * @route   GET /api/auth/verify-email/:token
- * @access  Public
- */
+
 const verifyEmail = catchAsync(async (req, res) => {
   const { token } = req.params;
 
@@ -421,11 +347,7 @@ const verifyEmail = catchAsync(async (req, res) => {
   });
 });
 
-/**
- * @desc    Resend verification email
- * @route   POST /api/auth/resend-verification
- * @access  Private
- */
+
 const resendVerification = catchAsync(async (req, res) => {
   const user = await User.findById(req.user.id);
 
@@ -475,7 +397,7 @@ const resendVerification = catchAsync(async (req, res) => {
   });
 });
 
-// ==================== EXPORT ====================
+
 module.exports = {
   register,
   login,

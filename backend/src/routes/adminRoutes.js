@@ -1,10 +1,9 @@
-// src/routes/adminRoutes.js - ✅ COMPLETE FIXED
+
 const express = require('express');
 const router = express.Router();
 const { body, param, query, validationResult } = require('express-validator');
 const { protect, authorize } = require('../middleware/auth');
 
-// ✅ VALIDATE REQUEST
 const validateRequest = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -40,11 +39,7 @@ const {
   getStats,
 } = require('../controllers/adminController');
 
-// ==================== VALIDATION RULES ====================
 
-/**
- * Center validation rules
- */
 const centerValidation = {
   create: [
     body('centerCode')
@@ -73,9 +68,7 @@ const centerValidation = {
   ],
 };
 
-/**
- * Schedule validation rules
- */
+
 const scheduleValidation = {
   create: [
     body('examCenterId').isMongoId().withMessage('Invalid exam center ID'),
@@ -93,9 +86,7 @@ const scheduleValidation = {
   ],
 };
 
-/**
- * User validation rules
- */
+
 const userValidation = {
   create: [
     body('name')
@@ -122,9 +113,7 @@ const userValidation = {
   ],
 };
 
-/**
- * Notification validation rules
- */
+
 const notificationValidation = {
   create: [
     body('title').trim().notEmpty().withMessage('Title is required'),
@@ -133,36 +122,32 @@ const notificationValidation = {
   ],
 };
 
-// ==================== ROUTES ====================
 
-// All admin routes require authentication
 router.use(protect);
 
-// ==================== STATS ====================
 router.get('/stats', authorize('admin'), getStats);
 
-// ==================== CENTERS ====================
 router.get('/centers', authorize('board_official', 'admin'), getCenters);
 router.get('/centers/:id', authorize('board_official', 'admin'), centerValidation.id, validateRequest, getCenter);
 router.post('/centers', authorize('board_official', 'admin'), centerValidation.create, validateRequest, createCenter);
 router.put('/centers/:id', authorize('board_official', 'admin'), centerValidation.update, validateRequest, updateCenter);
 router.delete('/centers/:id', authorize('board_official', 'admin'), centerValidation.id, validateRequest, deleteCenter);
 
-// ==================== SCHEDULES ====================
+// SCHEDULES
 router.get('/schedules', authorize('board_official', 'admin'), getSchedules);
 router.get('/schedules/:id', authorize('board_official', 'admin'), scheduleValidation.id, validateRequest, getSchedule);
 router.post('/schedules', authorize('board_official', 'admin'), scheduleValidation.create, validateRequest, createSchedule);
 router.put('/schedules/:id', authorize('board_official', 'admin'), scheduleValidation.update, validateRequest, updateSchedule);
 router.delete('/schedules/:id', authorize('board_official', 'admin'), scheduleValidation.id, validateRequest, deleteSchedule);
 
-// ==================== USERS ====================
+//  USERS 
 router.get('/users', authorize('admin'), getUsers);
 router.get('/users/:id', authorize('admin'), userValidation.id, validateRequest, getUser);
 router.post('/users', authorize('admin'), userValidation.create, validateRequest, createUser);
 router.put('/users/:id', authorize('admin'), userValidation.update, validateRequest, updateUser);
 router.delete('/users/:id', authorize('admin'), userValidation.id, validateRequest, deleteUser);
 
-// ==================== NOTIFICATIONS ====================
+//NOTIFICATIONS
 router.post('/notifications', authorize('board_official', 'admin'), notificationValidation.create, validateRequest, sendNotification);
 router.get('/notifications', authorize('board_official', 'admin'), getNotifications);
 

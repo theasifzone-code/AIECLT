@@ -1,131 +1,234 @@
-// components/CTASection.jsx - ✅ Production Level Code
 import React from 'react';
-import { 
-  ArrowRightIcon, 
+import {
+  ArrowRightIcon,
   SparklesIcon,
   CheckBadgeIcon,
   RocketLaunchIcon,
   UserGroupIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
+import { useTheme } from '../context/ThemeContext';
 
 const CTASection = ({ onNavigate, user }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const features = [
     {
       icon: CheckBadgeIcon,
       text: '100% Secure',
-      color: 'text-green-400',
+      color: 'text-emerald-500',
+      bg: 'bg-emerald-500/10',
     },
     {
       icon: RocketLaunchIcon,
       text: 'Fast & Reliable',
-      color: 'text-blue-400',
+      color: 'text-blue-500',
+      bg: 'bg-blue-500/10',
     },
     {
       icon: UserGroupIcon,
       text: '24/7 Support',
-      color: 'text-purple-400',
+      color: 'text-purple-500',
+      bg: 'bg-purple-500/10',
     },
     {
       icon: ShieldCheckIcon,
       text: 'Data Privacy',
-      color: 'text-orange-400',
+      color: 'text-amber-500',
+      bg: 'bg-amber-500/10',
     },
   ];
 
   return (
-    <section className="py-24 px-4 relative overflow-hidden" id="cta">
-      {/* ==================== BACKGROUND EFFECTS ==================== */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-grid-pattern opacity-5" />
-        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-blob" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-blob animation-delay-2000" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-pink-500/5 rounded-full blur-3xl" />
+    <section
+      id="cta"
+      className={`relative overflow-hidden py-20 sm:py-24 lg:py-28 px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${isDark
+          ? 'bg-gray-950 text-white'
+          : 'bg-slate-50 text-slate-900'
+        }`}
+    >
+      <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
+        {/* Grid */}
+        <div
+          className={`
+            absolute inset-0
+            opacity-[0.035]
+            ${isDark
+              ? 'bg-[linear-gradient(rgba(255,255,255,.8)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.8)_1px,transparent_1px)]'
+              : 'bg-[linear-gradient(rgba(37,99,235,.8)_1px,transparent_1px),linear-gradient(90deg,rgba(37,99,235,.8)_1px,transparent_1px)]'
+            }
+            [background-size:40px_40px]
+          `}
+        />
+        <div className="absolute -top-40 left-1/4 w-96 h-96 rounded-full bg-blue-600/10 blur-3xl" />
+        <div className="absolute top-1/4 -right-40 w-96 h-96 rounded-full bg-violet-600/10 blur-3xl" />
       </div>
 
-      <div className="container mx-auto max-w-5xl">
-        {/* ==================== MAIN CTA CARD ==================== */}
-        <div className="relative bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 rounded-3xl p-8 md:p-12 border border-white/10 backdrop-blur-sm shadow-2xl shadow-blue-500/5 animate-fade-in">
-          <div className="absolute inset-0 -z-10">
-            <div className="absolute top-0 left-0 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 right-0 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl" />
-          </div>
-          
-          <div className="text-center relative">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 border border-blue-500/30 rounded-full mb-6 animate-float">
-              <SparklesIcon className="w-4 h-4 text-blue-400 animate-pulse" />
-              <span className="text-sm text-blue-400 font-medium">Ready to Get Started?</span>
-            </div>
-            
-            {/* Heading */}
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
-              Join Thousands of{' '}
-              <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Users
-              </span>
-            </h2>
-            
-            {/* Description */}
-            <p className="text-gray-300 max-w-2xl mx-auto mb-8 text-lg leading-relaxed">
-              Start managing exam centers efficiently with AI-ECLT. 
-              Sign up today and transform your exam management process 
-              with AI-powered tools.
-            </p>
+      <div className="relative max-w-6xl mx-auto">
 
-            {/* Features List */}
-            <div className="flex flex-wrap items-center justify-center gap-6 mb-8">
-              {features.map((feature, index) => {
-                const Icon = feature.icon;
-                return (
-                  <div key={index} className="flex items-center gap-2">
-                    <Icon className={`w-4 h-4 ${feature.color}`} />
-                    <span className="text-sm text-gray-300">{feature.text}</span>
-                  </div>
-                );
-              })}
+        <div
+          className={`relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] border ${isDark
+              ? 'bg-white/[0.03] border-white/10'
+              : 'bg-white border-slate-200 shadow-2xl shadow-slate-200/60'
+            }`}
+        >
+
+          <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-blue-600/10 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-purple-600/10 blur-3xl pointer-events-none" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent" />
+
+          <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 p-7 sm:p-10 lg:p-14">
+            <div className="lg:col-span-7 flex flex-col justify-center text-center lg:text-left">
+
+              <div
+                className={`mx-auto lg:mx-0 inline-flex w-fit items-center gap-2 px-4 py-2 rounded-full border text-xs sm:text-sm font-semibold mb-6 ${isDark
+                    ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                    : 'bg-blue-50 border-blue-200 text-blue-600'
+                  }`}
+              >
+                <SparklesIcon className="w-4 h-4 animate-pulse" />
+                Ready to Get Started?
+              </div>
+
+              <h2
+                className={`text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight ${isDark ? 'text-white' : 'text-slate-900'
+                  }`}
+              >
+                Make Exam Management
+
+                <span className="block mt-2 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 bg-clip-text text-transparent">
+                  Smarter & Easier
+                </span>
+              </h2>
+
+              <p
+                className={`mt-5 max-w-2xl mx-auto lg:mx-0 text-sm sm:text-base lg:text-lg leading-7 ${isDark ? 'text-gray-400' : 'text-slate-600'
+                  }`}
+              >
+                Join AI-ECLT and simplify your exam center operations
+                with smart scheduling, real-time monitoring, and
+                powerful AI-driven tools.
+              </p>
+
+              <div
+                className={`hidden sm:flex flex-wrap items-center justify-center lg:justify-start gap-x-5 gap-y-2 mt-7 text-xs sm:text-sm font-medium ${isDark ? 'text-gray-500' : 'text-slate-500'
+                  }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <CheckBadgeIcon className="w-4 h-4 text-emerald-500" />
+                  50+ institutions
+                </span>
+
+                <span
+                  className={`w-1 h-1 rounded-full ${isDark ? 'bg-gray-700' : 'bg-slate-300'
+                    }`}
+                />
+
+                <span>⭐ 4.9/5 rating</span>
+
+                <span
+                  className={`w-1 h-1 rounded-full ${isDark ? 'bg-gray-700' : 'bg-slate-300'
+                    }`}
+                />
+
+                <span>10K+ students</span>
+              </div>
             </div>
-            
-            {/* CTA Buttons */}
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              {!user ? (
-                <>
+
+            <div className="lg:col-span-5 flex flex-col justify-center">
+
+              {/* Features */}
+              <div className="grid grid-cols-2 gap-3">
+                {features.map((feature) => {
+                  const Icon = feature.icon;
+
+                  return (
+                    <div
+                      key={feature.text}
+                      className={`group flex items-center gap-2.5 p-3 sm:p-3.5 rounded-2xl border transition-all duration-300 hover:-translate-y-1 ${isDark
+                          ? 'bg-white/[0.03] border-white/10 hover:border-white/20 hover:bg-white/[0.05]'
+                          : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-slate-300 hover:shadow-md'
+                        }`}
+                    >
+                      <div
+                        className={`shrink-0 w-9 h-9 rounded-xl ${feature.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}
+                      >
+                        <Icon className={`w-4.5 h-4.5 ${feature.color}`} />
+                      </div>
+
+                      <span
+                        className={`text-xs sm:text-sm font-semibold ${isDark ? 'text-gray-200' : 'text-slate-800'
+                          }`}
+                      >
+                        {feature.text}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-6 flex flex-col sm:flex-row gap-3">
+
+                {!user ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onNavigate('register')}
+                      className="group w-full sm:flex-1 inline-flex items-center justify-center gap-2 px-6 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm sm:text-base shadow-xl shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
+                    >
+                      Get Started
+                      <ArrowRightIcon className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => onNavigate('login')}
+                      className={`w-full sm:w-auto px-6 py-3.5 sm:py-4 rounded-2xl border font-semibold text-sm sm:text-base transition-all duration-300 hover:-translate-y-0.5 active:scale-95 ${isDark
+                          ? 'bg-white/[0.03] border-white/10 text-white hover:bg-white/[0.06] hover:border-white/20'
+                          : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50 hover:border-slate-300 shadow-sm'
+                        }`}
+                    >
+                      Sign In
+                    </button>
+                  </>
+                ) : (
                   <button
-                    onClick={() => onNavigate('register')}
-                    className="group px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 flex items-center gap-2 text-lg font-medium hover:-translate-y-1"
+                    type="button"
+                    onClick={() => onNavigate('student')}
+                    className="group w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm sm:text-base shadow-xl shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-0.5 transition-all duration-300"
                   >
-                    Get Started Now
+                    Go to Dashboard
                     <ArrowRightIcon className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </button>
-                  <button
-                    onClick={() => onNavigate('login')}
-                    className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all border border-white/10 hover:border-white/20 text-lg font-medium hover:-translate-y-1"
-                  >
-                    Sign In
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => onNavigate('student')}
-                  className="group px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 flex items-center gap-2 text-lg font-medium hover:-translate-y-1"
-                >
-                  Go to Dashboard
-                  <ArrowRightIcon className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </button>
-              )}
-            </div>
+                )}
+              </div>
 
-            {/* Trust Badge */}
-            <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-500">
-              <span className="flex items-center gap-1">
-                <CheckBadgeIcon className="w-3 h-3 text-green-400" />
-                Trusted by 50+ institutions
-              </span>
-              <span className="w-px h-3 bg-gray-700" />
-              <span>⭐ 4.9/5 average rating</span>
+              <div
+                className={`sm:hidden flex items-center justify-center gap-3 mt-5 text-[11px] font-medium ${isDark ? 'text-gray-500' : 'text-slate-500'
+                  }`}
+              >
+                <span className="flex items-center gap-1">
+                  <CheckBadgeIcon className="w-3.5 h-3.5 text-emerald-500" />
+                  50+ institutions
+                </span>
+
+                <span>•</span>
+
+                <span>⭐ 4.9/5 rating</span>
+              </div>
             </div>
           </div>
+
+          <div className="absolute bottom-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
         </div>
+
+        <p
+          className={`text-center mt-6 text-xs sm:text-sm ${isDark ? 'text-gray-600' : 'text-slate-400'
+            }`}
+        >
+          Everything you need to manage exams efficiently — all in one place.
+        </p>
       </div>
     </section>
   );

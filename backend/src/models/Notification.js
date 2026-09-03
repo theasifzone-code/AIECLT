@@ -1,4 +1,4 @@
-// src/models/Notification.js - ✅ FINAL FIXED (No next)
+
 const mongoose = require('mongoose');
 
 const NotificationSchema = new mongoose.Schema(
@@ -120,7 +120,7 @@ const NotificationSchema = new mongoose.Schema(
   }
 );
 
-// ==================== INDEXES ====================
+
 NotificationSchema.index({ sentBy: 1 });
 NotificationSchema.index({ targetRole: 1 });
 NotificationSchema.index({ isRead: 1 });
@@ -145,8 +145,7 @@ NotificationSchema.virtual('isDelivered').get(function () {
   return this.sentAt !== null;
 });
 
-// ==================== PRE-SAVE HOOK (✅ FIXED) ====================
-// ✅ next() hata diya, async laga diya
+
 NotificationSchema.pre('save', async function () {
   if (this.title) this.title = this.title.trim();
   if (this.message) this.message = this.message.trim();
@@ -159,10 +158,9 @@ NotificationSchema.pre('save', async function () {
     this.targetUsers = [];
   }
 
-  // ✅ next() call NAHI karna
 });
 
-// ==================== INSTANCE METHODS ====================
+
 
 NotificationSchema.methods.markAsRead = async function (userId) {
   if (this.isRead) return true;
@@ -203,7 +201,6 @@ NotificationSchema.methods.restore = async function () {
   await this.save();
 };
 
-// ==================== STATIC METHODS ====================
 
 NotificationSchema.statics.countUnreadForUser = async function (userId) {
   return this.countDocuments({
@@ -232,5 +229,5 @@ NotificationSchema.statics.getStats = async function () {
   };
 };
 
-// ==================== EXPORT ====================
+
 module.exports = mongoose.model('Notification', NotificationSchema);

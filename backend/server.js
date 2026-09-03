@@ -1,4 +1,4 @@
-// server.js - ✅ FINAL FIXED & UPDATED (With Notification Routes)
+
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -8,29 +8,27 @@ const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 
-// Import database connection
 const connectDB = require('./src/config/database');
 const errorHandler = require('./src/middleware/errorHandler');
 
-// Import routes
 const authRoutes = require('./src/routes/authRoutes');
 const ocrRoutes = require('./src/routes/ocrRoutes');
 const routeRoutes = require('./src/routes/routeRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
-const notificationRoutes = require('./src/routes/notificationRoutes'); // ✅ NEW: Notification Routes
+const notificationRoutes = require('./src/routes/notificationRoutes');
+const scheduleRoutes = require('./src/routes/scheduleRoutes');
 
-// ==================== LOAD ENVIRONMENT ====================
+//LOAD ENVIRONMENT 
 dotenv.config();
 
-// ==================== CONNECT DATABASE ====================
+//  CONNECT DATABASE 
 connectDB();
 
-// ==================== INITIALIZE EXPRESS ====================
+//INITIALIZE EXPRESS
 const app = express();
 
-// ==================== SECURITY MIDDLEWARE ====================
+//  SECURITY MIDDLEWARE 
 
-// Helmet - Security headers
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -39,7 +37,7 @@ app.use(
   })
 );
 
-// CORS - Cross-Origin Resource Sharing
+// CORS - Cross-Origin 
 const corsOptions = {
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
@@ -50,10 +48,10 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Rate Limiting - Prevent brute force attacks
+// Rate Limiting 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 100,
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again after 15 minutes.',
@@ -63,30 +61,23 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-// ==================== LOGGING ====================
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 } else {
   app.use(morgan('combined'));
 }
 
-// ==================== COMPRESSION ====================
 app.use(compression());
 
-// ==================== BODY PARSER ====================
+// BODY PARSER 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ==================== STATIC FILES ====================
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ==================== API DOCUMENTATION ====================
 
-/**
- * @route   GET /
- * @desc    API root with documentation
- * @access  Public
- */
+
 app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
@@ -162,11 +153,6 @@ app.get('/', (req, res) => {
   });
 });
 
-/**
- * @route   GET /api/health
- * @desc    Health check endpoint
- * @access  Public
- */
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     success: true,
@@ -178,14 +164,15 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// ==================== ROUTES ====================
+//  ROUTES 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ocr', ocrRoutes);
 app.use('/api/route', routeRoutes);
-app.use('/api/notifications', notificationRoutes); // ✅ NEW: Notification Routes Register Kiye
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/schedules', scheduleRoutes);
 
-// ==================== 404 HANDLER ====================
+//  404 HANDLER 
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -195,64 +182,43 @@ app.use((req, res) => {
   });
 });
 
-// ==================== GLOBAL ERROR HANDLER ====================
+// GLOBAL ERROR HANDLER
 app.use(errorHandler);
 
-// ==================== START SERVER ====================
 const PORT = process.env.PORT || 5000;
 
-let server; // ✅ Server variable declare kiya
+let server;
 
 const startServer = () => {
   try {
-    server = app.listen(PORT, () => { // ✅ Server ko variable mein assign kiya
-      console.log('');
-      console.log('='.repeat(60));
-      console.log('🚀 AI-ECLT Backend Server');
-      console.log('='.repeat(60));
-      console.log(`📡 Server running on: http://localhost:${PORT}`);
-      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`📊 MongoDB: Connected`);
-      console.log('');
-      console.log('📌 API Endpoints:');
-      console.log(`   - Auth:     http://localhost:${PORT}/api/auth`);
-      console.log(`   - Admin:    http://localhost:${PORT}/api/admin`);
-      console.log(`   - OCR:      http://localhost:${PORT}/api/ocr`);
-      console.log(`   - Route:    http://localhost:${PORT}/api/route`);
-      console.log(`   - Notif:    http://localhost:${PORT}/api/notifications`);
-      console.log('');
-      console.log('📖 API Documentation: http://localhost:${PORT}/');
-      console.log('='.repeat(60));
-      console.log('');
+    server = app.listen(PORT, () => {
+      console.log(`Server running on: http://localhost:${PORT}`);
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error.message);
+    console.error('Failed to start server:', error.message);
     process.exit(1);
   }
 };
 
-// ==================== UNHANDLED ERRORS ====================
 
-// Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
-  console.error('❌ Unhandled Rejection:', err);
-  // Gracefully shutdown
+  console.error(' Unhandled Rejection:', err);
+
   if (server) server.close(() => process.exit(1));
   process.exit(1);
 });
 
-// Handle uncaught exceptions
+
 process.on('uncaughtException', (err) => {
-  console.error('❌ Uncaught Exception:', err);
+  console.error('Uncaught Exception:', err);
   process.exit(1);
 });
 
-// Handle SIGTERM
 process.on('SIGTERM', () => {
-  console.log('🛑 SIGTERM received. Shutting down gracefully...');
+  console.log('SIGTERM received. Shutting down gracefully...');
   if (server) {
     server.close(() => {
-      console.log('💀 Process terminated');
+      console.log('Process terminated');
       process.exit(0);
     });
   } else {
@@ -260,8 +226,7 @@ process.on('SIGTERM', () => {
   }
 });
 
-// ==================== EXPORT ====================
+
 module.exports = app;
 
-// ==================== START ====================
 startServer();

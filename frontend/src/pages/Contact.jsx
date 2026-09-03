@@ -1,9 +1,8 @@
-// components/Contact.jsx - ✅ FIXED (EnvelopeIcon)
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   MapPinIcon, 
-  EnvelopeIcon, // ✅ Replace MailIcon with EnvelopeIcon
+  EnvelopeIcon, 
   PhoneIcon, 
   ClockIcon,
   UserIcon,
@@ -13,8 +12,12 @@ import {
   QuestionMarkCircleIcon,
   ArrowRightIcon
 } from '@heroicons/react/24/outline';
+import { useTheme } from '../context/ThemeContext';
 
 const Contact = () => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -27,26 +30,26 @@ const Contact = () => {
     {
       icon: MapPinIcon,
       title: 'Our Location',
-      description: 'Islamabad, Pakistan',
-      color: 'text-blue-400'
+      description: 'Lahore, Pakistan',
+      color: 'text-blue-500'
     },
     {
-      icon: EnvelopeIcon, // ✅ Replace here
+      icon: EnvelopeIcon,
       title: 'Email Us',
       description: 'support@ai-eclt.edu',
-      color: 'text-purple-400'
+      color: 'text-purple-500'
     },
     {
       icon: PhoneIcon,
       title: 'Call Us',
       description: '+92 300 1234567',
-      color: 'text-green-400'
+      color: 'text-emerald-500'
     },
     {
       icon: ClockIcon,
       title: 'Working Hours',
       description: 'Mon - Fri: 9AM - 5PM',
-      color: 'text-yellow-400'
+      color: 'text-amber-500'
     }
   ];
 
@@ -71,8 +74,6 @@ const Contact = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Here you can integrate your backend API for contact form
-    // For now, we'll show a success message
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
@@ -81,180 +82,306 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      {/* ==================== HERO SECTION ==================== */}
-      <section className="relative overflow-hidden pt-24 pb-16 px-4">
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300/10 rounded-full blur-3xl"></div>
-          <div className="absolute top-0 -right-4 w-72 h-72 bg-blue-300/10 rounded-full blur-3xl"></div>
-          <div className="absolute inset-0 bg-grid-pattern opacity-5" />
+    <div className={`min-h-screen overflow-x-hidden transition-colors duration-300 ${
+      isDark
+        ? 'bg-slate-950 text-white'
+        : 'bg-slate-50 text-slate-900'
+    }`}>
+      <section className="relative isolate overflow-hidden px-4 pb-14 pt-24 sm:px-6 sm:pb-20 sm:pt-28 lg:px-8">
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className={`absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full blur-3xl ${
+            isDark ? 'bg-blue-600/15' : 'bg-blue-300/30'
+          }`} />
+          <div className={`absolute -left-24 top-24 h-64 w-64 rounded-full blur-3xl ${
+            isDark ? 'bg-purple-600/10' : 'bg-purple-300/20'
+          }`} />
+          <div className={`absolute -right-24 top-16 h-64 w-64 rounded-full blur-3xl ${
+            isDark ? 'bg-cyan-600/10' : 'bg-cyan-300/20'
+          }`} />
+          <div className={`absolute inset-x-0 top-0 h-px ${
+            isDark ? 'bg-white/10' : 'bg-slate-200'
+          }`} />
         </div>
 
-        <div className="container mx-auto max-w-6xl relative">
-          <div className="text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-full mb-6 animate-fade-in">
-              <ChatBubbleLeftRightIcon className="w-4 h-4 text-blue-400" />
-              <span className="text-sm text-blue-400 font-medium">Get In Touch</span>
+        <div className="mx-auto max-w-6xl">
+          <div className="mx-auto max-w-3xl text-center">
+            <div className={`mx-auto mb-5 inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-bold tracking-wide shadow-sm backdrop-blur ${
+              isDark
+                ? 'border-blue-400/20 bg-blue-500/10 text-blue-300'
+                : 'border-blue-200 bg-white/80 text-blue-700'
+            }`}>
+              <span className="flex h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.8)]" />
+              AI-ECLT Support Center
             </div>
 
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight mb-6">
-              <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Let's Connect
+            <h1 className={`text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl ${
+              isDark ? 'text-white' : 'text-slate-950'
+            }`}>
+              Let's build a better
+              <span className="block bg-gradient-to-r from-blue-600 via-violet-500 to-fuchsia-500 bg-clip-text text-transparent">
+                exam experience.
               </span>
-              <br />
-              <span className="text-gray-200">With Us</span>
             </h1>
 
-            <p className="text-lg sm:text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
-              Have questions about AI-ECLT? We're here to help! Reach out to us 
-              through any of the channels below, or fill out the contact form 
-              and we'll get back to you as soon as possible.
+            <p className={`mx-auto mt-6 max-w-2xl text-sm leading-7 sm:text-base sm:leading-8 ${
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            }`}>
+              Have a question, need support, or want to learn more about AI-ECLT?
+              Send us a message and our team will help you get moving.
             </p>
           </div>
         </div>
       </section>
 
-      {/* ==================== CONTACT INFO CARDS ==================== */}
-      <section className="py-12 px-4">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <section className="px-4 py-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {contactInfo.map((info, i) => (
-              <div key={i} className="bg-white/5 rounded-xl p-6 border border-white/10 hover:border-white/20 transition text-center hover:-translate-y-1">
-                <info.icon className={`w-10 h-10 mx-auto mb-4 ${info.color}`} />
-                <h3 className="text-lg font-semibold text-white mb-2">{info.title}</h3>
-                <p className="text-sm text-gray-400">{info.description}</p>
+              <div
+                key={i}
+                className={`group rounded-2xl border p-5 transition-all duration-300 hover:-translate-y-1 ${
+                  isDark
+                    ? 'border-white/10 bg-white/[0.04] hover:border-blue-400/20 hover:bg-white/[0.06]'
+                    : 'border-slate-200/80 bg-white shadow-sm hover:border-blue-200 hover:shadow-lg hover:shadow-blue-100/50'
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                    isDark ? 'bg-white/[0.06]' : 'bg-slate-100'
+                  }`}>
+                    <info.icon className={`h-5 w-5 ${info.color}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      {info.title}
+                    </h3>
+                    <p className={`mt-0.5 truncate text-xs sm:text-sm ${
+                      isDark ? 'text-slate-400' : 'text-slate-600'
+                    }`}>
+                      {info.description}
+                    </p>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ==================== CONTACT FORM & MAP ==================== */}
-      <section className="py-16 px-4">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <section className="px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid items-stretch gap-6 lg:grid-cols-[1.08fr_.92fr]">
             {/* Contact Form */}
-            <div className="bg-white/5 rounded-2xl p-8 border border-white/10 hover:border-white/20 transition">
-              <h2 className="text-2xl font-bold text-white mb-6">Send Us a Message</h2>
+            <div className={`relative overflow-hidden rounded-3xl border p-6 sm:p-8 lg:p-10 ${
+              isDark
+                ? 'border-white/10 bg-white/[0.04]'
+                : 'border-slate-200 bg-white shadow-xl shadow-slate-200/50'
+            }`}>
+              <div className="pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full bg-blue-500/10 blur-3xl" />
 
-              {submitted ? (
-                <div className="bg-green-500/10 border border-green-500/50 rounded-xl p-6 text-center">
-                  <CheckCircleIcon className="w-12 h-12 text-green-400 mx-auto mb-4" />
-                  <p className="text-lg font-semibold text-green-400 mb-2">Message Sent!</p>
-                  <p className="text-gray-400">Thank you for contacting us. We'll get back to you soon.</p>
+              <div className="relative">
+                <div className="mb-7">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-500">
+                    Contact our team
+                  </p>
+                  <h2 className={`text-2xl font-black tracking-tight sm:text-3xl ${
+                    isDark ? 'text-white' : 'text-slate-950'
+                  }`}>
+                    Send us a message
+                  </h2>
+                  <p className={`mt-2 max-w-lg text-sm leading-6 ${
+                    isDark ? 'text-slate-400' : 'text-slate-500'
+                  }`}>
+                    Tell us what you need. We’ll get back to you as soon as possible.
+                  </p>
                 </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Your Name</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <UserIcon className="w-5 h-5 text-gray-400" />
+
+                {submitted ? (
+                  <div className="flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-8 text-center">
+                    <div className="mb-4 rounded-full bg-emerald-500/15 p-3">
+                      <CheckCircleIcon className="h-10 w-10 text-emerald-500" />
+                    </div>
+                    <p className="text-lg font-bold text-emerald-500">Message Sent!</p>
+                    <p className={`mt-2 max-w-sm text-sm leading-6 ${
+                      isDark ? 'text-slate-400' : 'text-slate-600'
+                    }`}>
+                      Thank you for contacting us. We’ll get back to you soon.
+                    </p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <div>
+                        <label className={`mb-2 block text-xs font-bold ${
+                          isDark ? 'text-slate-300' : 'text-slate-700'
+                        }`}>
+                          Your Name
+                        </label>
+                        <div className="relative">
+                          <UserIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="text"
+                            placeholder="John Doe"
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            className={`w-full rounded-xl border py-3.5 pl-11 pr-4 text-sm outline-none transition-all placeholder:text-slate-400 focus:ring-4 ${
+                              isDark
+                                ? 'border-white/10 bg-slate-950/60 text-white focus:border-blue-500 focus:ring-blue-500/10'
+                                : 'border-slate-200 bg-slate-50 text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-blue-500/10'
+                            }`}
+                            required
+                          />
+                        </div>
                       </div>
+
+                      <div>
+                        <label className={`mb-2 block text-xs font-bold ${
+                          isDark ? 'text-slate-300' : 'text-slate-700'
+                        }`}>
+                          Your Email
+                        </label>
+                        <div className="relative">
+                          <EnvelopeIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="email"
+                            placeholder="john@example.com"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            className={`w-full rounded-xl border py-3.5 pl-11 pr-4 text-sm outline-none transition-all placeholder:text-slate-400 focus:ring-4 ${
+                              isDark
+                                ? 'border-white/10 bg-slate-950/60 text-white focus:border-blue-500 focus:ring-blue-500/10'
+                                : 'border-slate-200 bg-slate-50 text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-blue-500/10'
+                            }`}
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={`mb-2 block text-xs font-bold ${
+                        isDark ? 'text-slate-300' : 'text-slate-700'
+                      }`}>
+                        Subject
+                      </label>
                       <input
                         type="text"
-                        placeholder="John Doe"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full bg-white/5 text-white pl-10 pr-4 py-3 rounded-lg border border-white/10 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition placeholder-gray-500"
+                        placeholder="How can we help you?"
+                        value={formData.subject}
+                        onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                        className={`w-full rounded-xl border px-4 py-3.5 text-sm outline-none transition-all placeholder:text-slate-400 focus:ring-4 ${
+                          isDark
+                            ? 'border-white/10 bg-slate-950/60 text-white focus:border-blue-500 focus:ring-blue-500/10'
+                            : 'border-slate-200 bg-slate-50 text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-blue-500/10'
+                        }`}
                         required
                       />
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Your Email</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <EnvelopeIcon className="w-5 h-5 text-gray-400" /> {/* ✅ Replace here */}
-                      </div>
-                      <input
-                        type="email"
-                        placeholder="john@example.com"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full bg-white/5 text-white pl-10 pr-4 py-3 rounded-lg border border-white/10 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition placeholder-gray-500"
+                    <div>
+                      <label className={`mb-2 block text-xs font-bold ${
+                        isDark ? 'text-slate-300' : 'text-slate-700'
+                      }`}>
+                        Message
+                      </label>
+                      <textarea
+                        rows="5"
+                        placeholder="Write your message here..."
+                        value={formData.message}
+                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                        className={`w-full resize-none rounded-xl border px-4 py-3.5 text-sm outline-none transition-all placeholder:text-slate-400 focus:ring-4 ${
+                          isDark
+                            ? 'border-white/10 bg-slate-950/60 text-white focus:border-blue-500 focus:ring-blue-500/10'
+                            : 'border-slate-200 bg-slate-50 text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-blue-500/10'
+                        }`}
                         required
                       />
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Subject</label>
-                    <input
-                      type="text"
-                      placeholder="How can we help you?"
-                      value={formData.subject}
-                      onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                      className="w-full bg-white/5 text-white px-4 py-3 rounded-lg border border-white/10 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition placeholder-gray-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Message</label>
-                    <textarea
-                      rows="5"
-                      placeholder="Write your message here..."
-                      value={formData.message}
-                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                      className="w-full bg-white/5 text-white px-4 py-3 rounded-lg border border-white/10 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition placeholder-gray-500 resize-none"
-                      required
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full px-6 py-3.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl transition shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 font-medium flex items-center justify-center gap-2"
-                  >
-                    <PaperAirplaneIcon className="w-5 h-5" />
-                    Send Message
-                  </button>
-                </form>
-              )}
+                    <button
+                      type="submit"
+                      className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-600/25 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
+                    >
+                      <PaperAirplaneIcon className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                      Send Message
+                    </button>
+                  </form>
+                )}
+              </div>
             </div>
 
-            {/* Map & Info */}
-            <div className="bg-white/5 rounded-2xl p-8 border border-white/10 hover:border-white/20 transition">
-              <h2 className="text-2xl font-bold text-white mb-6">Find Us Here</h2>
-              
-              {/* Placeholder Map */}
-              <div className="bg-gray-800/50 rounded-xl h-64 mb-6 flex items-center justify-center border border-white/5 relative overflow-hidden">
-                <div className="text-center text-gray-400">
-                  <MapPinIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Map Coming Soon</p>
-                </div>
-                <div className="absolute inset-0 bg-grid-pattern opacity-10" />
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-blue-500/20 rounded-lg">
-                    <MapPinIcon className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-white">Address</p>
-                    <p className="text-sm text-gray-400">Islamabad, Pakistan</p>
-                  </div>
+            {/* Location / Contact details */}
+            <div className={`relative overflow-hidden rounded-3xl border p-6 sm:p-8 lg:p-10 ${
+              isDark
+                ? 'border-white/10 bg-gradient-to-br from-blue-500/[0.08] to-violet-500/[0.06]'
+                : 'border-slate-200 bg-gradient-to-br from-blue-50 via-white to-violet-50 shadow-xl shadow-slate-200/40'
+            }`}>
+              <div className="relative flex h-full flex-col">
+                <div>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-500">
+                    Visit & connect
+                  </p>
+                  <h2 className={`text-2xl font-black tracking-tight sm:text-3xl ${
+                    isDark ? 'text-white' : 'text-slate-950'
+                  }`}>
+                    Find us here
+                  </h2>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-purple-500/20 rounded-lg">
-                    <EnvelopeIcon className="w-5 h-5 text-purple-400" /> {/* ✅ Replace here */}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-white">Email</p>
-                    <p className="text-sm text-gray-400">support@ai-eclt.edu</p>
+                <div className={`relative mt-7 flex h-56 items-center justify-center overflow-hidden rounded-2xl border ${
+                  isDark
+                    ? 'border-white/10 bg-slate-950/50'
+                    : 'border-slate-200 bg-white/70'
+                }`}>
+                  <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(to_right,currentColor_1px,transparent_1px),linear-gradient(to_bottom,currentColor_1px,transparent_1px)] [background-size:28px_28px] text-slate-300 dark:text-slate-700" />
+                  <div className="relative text-center">
+                    <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/10">
+                      <MapPinIcon className="h-7 w-7 text-blue-500" />
+                    </div>
+                    <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                      Lahore, Pakistan
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400">Map integration coming soon</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-green-500/20 rounded-lg">
-                    <PhoneIcon className="w-5 h-5 text-green-400" />
+                <div className={`my-7 h-px ${isDark ? 'bg-white/10' : 'bg-slate-200'}`} />
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="rounded-xl bg-blue-500/10 p-3">
+                      <MapPinIcon className="h-5 w-5 text-blue-500" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Address</p>
+                      <p className={`mt-1 text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        Lahore, Pakistan
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-white">Phone</p>
-                    <p className="text-sm text-gray-400">+92 300 1234567</p>
+
+                  <div className="flex items-center gap-4">
+                    <div className="rounded-xl bg-violet-500/10 p-3">
+                      <EnvelopeIcon className="h-5 w-5 text-violet-500" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Email</p>
+                      <p className={`mt-1 truncate text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        support@ai-eclt.edu
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="rounded-xl bg-emerald-500/10 p-3">
+                      <PhoneIcon className="h-5 w-5 text-emerald-500" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Phone</p>
+                      <p className={`mt-1 text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        +92 300 1234567
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -263,24 +390,49 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* ==================== FAQ SECTION ==================== */}
-      <section className="py-16 px-4">
-        <div className="container mx-auto max-w-4xl">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Frequently Asked Questions</h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
+      <section className="px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
+        <div className="mx-auto max-w-4xl">
+          <div className="mx-auto mb-10 max-w-2xl text-center">
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-500">
+              Need quick answers?
+            </p>
+            <h2 className={`text-3xl font-black tracking-tight sm:text-4xl ${
+              isDark ? 'text-white' : 'text-slate-950'
+            }`}>
+              Frequently asked questions
+            </h2>
+            <p className={`mt-3 text-sm leading-6 sm:text-base ${
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            }`}>
               Quick answers to common questions about AI-ECLT.
             </p>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {faqs.map((faq, i) => (
-              <div key={i} className="bg-white/5 rounded-xl p-6 border border-white/10 hover:border-white/20 transition">
-                <div className="flex items-start gap-3">
-                  <QuestionMarkCircleIcon className="w-6 h-6 text-blue-400 flex-shrink-0" />
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-2">{faq.question}</h3>
-                    <p className="text-gray-400">{faq.answer}</p>
+              <div
+                key={i}
+                className={`group rounded-2xl border p-5 transition-all duration-300 sm:p-6 ${
+                  isDark
+                    ? 'border-white/10 bg-white/[0.035] hover:border-blue-400/20 hover:bg-white/[0.05]'
+                    : 'border-slate-200 bg-white shadow-sm hover:border-blue-200 hover:shadow-md'
+                }`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="mt-0.5 rounded-xl bg-blue-500/10 p-2">
+                    <QuestionMarkCircleIcon className="h-5 w-5 text-blue-500" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className={`text-sm font-bold sm:text-base ${
+                      isDark ? 'text-white' : 'text-slate-900'
+                    }`}>
+                      {faq.question}
+                    </h3>
+                    <p className={`mt-2 text-sm leading-6 ${
+                      isDark ? 'text-slate-400' : 'text-slate-600'
+                    }`}>
+                      {faq.answer}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -289,28 +441,46 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* ==================== CTA SECTION ==================== */}
-      <section className="py-16 px-4">
-        <div className="container mx-auto max-w-4xl">
-          <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl p-8 sm:p-12 border border-blue-500/20 text-center">
-            <h2 className="text-3xl font-bold text-white mb-4">Ready to Get Started?</h2>
-            <p className="text-gray-400 mb-8 max-w-xl mx-auto">
-              Join thousands of students and institutions already using AI-ECLT to streamline their exam management.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link
-                to="/register"
-                className="group px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 flex items-center gap-2 text-lg font-medium hover:-translate-y-1"
-              >
-                Create Account
-                <ArrowRightIcon className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link
-                to="/about"
-                className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all border border-white/10 hover:border-white/20 text-lg font-medium hover:-translate-y-1"
-              >
-                About Us
-              </Link>
+      <section className="px-4 pb-16 pt-2 sm:px-6 sm:pb-24 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className={`relative overflow-hidden rounded-[2rem] border px-6 py-12 text-center sm:px-10 sm:py-16 ${
+            isDark
+              ? 'border-blue-400/10 bg-gradient-to-br from-blue-600/15 via-violet-600/10 to-fuchsia-600/10'
+              : 'border-blue-100 bg-gradient-to-br from-blue-50 via-white to-violet-50'
+          }`}>
+            <div className="pointer-events-none absolute left-1/2 top-0 h-40 w-72 -translate-x-1/2 rounded-full bg-blue-500/10 blur-3xl" />
+
+            <div className="relative mx-auto max-w-2xl">
+              <h2 className={`text-2xl font-black tracking-tight sm:text-4xl ${
+                isDark ? 'text-white' : 'text-slate-950'
+              }`}>
+                Ready to get started?
+              </h2>
+              <p className={`mx-auto mt-3 max-w-xl text-sm leading-6 sm:text-base ${
+                isDark ? 'text-slate-400' : 'text-slate-600'
+              }`}>
+                Join students and institutions using AI-ECLT to streamline their exam management experience.
+              </p>
+
+              <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+                <Link
+                  to="/register"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 hover:bg-blue-700"
+                >
+                  Create Account
+                  <ArrowRightIcon className="h-4 w-4" />
+                </Link>
+                <Link
+                  to="/about"
+                  className={`inline-flex items-center justify-center rounded-xl border px-7 py-3.5 text-sm font-bold transition-all hover:-translate-y-0.5 ${
+                    isDark
+                      ? 'border-white/10 bg-white/5 text-white hover:bg-white/10'
+                      : 'border-slate-200 bg-white text-slate-800 shadow-sm hover:bg-slate-50'
+                  }`}
+                >
+                  About Us
+                </Link>
+              </div>
             </div>
           </div>
         </div>

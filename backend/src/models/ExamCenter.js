@@ -1,4 +1,4 @@
-// src/models/ExamCenter.js - ✅ FINAL FIXED FOR MONGOOSE 7+
+
 const mongoose = require('mongoose');
 
 const ExamCenterSchema = new mongoose.Schema(
@@ -126,7 +126,7 @@ const ExamCenterSchema = new mongoose.Schema(
   }
 );
 
-// ==================== ✅ ALL INDEXES HERE ====================
+
 ExamCenterSchema.index({ name: 1 });
 ExamCenterSchema.index({ city: 1 });
 ExamCenterSchema.index({ country: 1 });
@@ -134,7 +134,6 @@ ExamCenterSchema.index({ isActive: 1 });
 ExamCenterSchema.index({ deletedAt: 1 });
 ExamCenterSchema.index({ latitude: 1, longitude: 1 });
 
-// ==================== VIRTUAL FIELDS ====================
 ExamCenterSchema.virtual('fullAddress').get(function () {
   const parts = [this.address, this.city, this.state, this.country].filter(Boolean);
   return parts.join(', ');
@@ -144,7 +143,6 @@ ExamCenterSchema.virtual('isDeleted').get(function () {
   return this.deletedAt !== null;
 });
 
-// ==================== PRE-SAVE HOOK (✅ FIXED - NO next) ====================
 ExamCenterSchema.pre('save', async function () {
   if (this.centerCode) {
     this.centerCode = this.centerCode.toUpperCase().trim();
@@ -152,10 +150,10 @@ ExamCenterSchema.pre('save', async function () {
   if (this.address) this.address = this.address.trim();
   if (this.city) this.city = this.city.trim();
   if (this.contactEmail) this.contactEmail = this.contactEmail.toLowerCase().trim();
-  // ✅ next() bilkul call NAHI karna. Save automatic hoga.
+
 });
 
-// ==================== INSTANCE METHODS ====================
+
 
 ExamCenterSchema.methods.softDelete = async function () {
   this.deletedAt = new Date();
@@ -169,7 +167,7 @@ ExamCenterSchema.methods.restore = async function () {
   await this.save();
 };
 
-// ==================== STATIC METHODS ====================
+
 
 ExamCenterSchema.statics.getStats = async function () {
   const [total, active] = await Promise.all([
@@ -183,5 +181,5 @@ ExamCenterSchema.statics.getStats = async function () {
   };
 };
 
-// ==================== EXPORT ====================
+
 module.exports = mongoose.model('ExamCenter', ExamCenterSchema);

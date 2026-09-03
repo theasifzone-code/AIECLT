@@ -1,4 +1,4 @@
-// src/main.jsx - ✅ FIXED (Remove BrowserRouter from here)
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Toaster } from 'react-hot-toast'
@@ -13,7 +13,6 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    {/* ✅ BrowserRouter HATAYA - App.jsx mein already hai */}
     <App />
     <Toaster
       position="top-right"

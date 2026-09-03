@@ -1,4 +1,3 @@
-// src/models/Schedule.js - ✅ FINAL FIXED (No next)
 const mongoose = require('mongoose');
 
 const ScheduleSchema = new mongoose.Schema(
@@ -13,7 +12,12 @@ const ScheduleSchema = new mongoose.Schema(
       required: [true, 'Please add exam date'],
       validate: {
         validator: function (value) {
-          return value >= new Date().setHours(0, 0, 0, 0);
+          if (!this.isNew) {
+            return true;
+          }
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return value >= today;
         },
         message: 'Exam date cannot be in the past',
       },
@@ -111,7 +115,6 @@ const ScheduleSchema = new mongoose.Schema(
   }
 );
 
-// ==================== INDEXES ====================
 ScheduleSchema.index({ examCenterId: 1 });
 ScheduleSchema.index({ examDate: 1 });
 ScheduleSchema.index({ subject: 1 });
@@ -121,7 +124,6 @@ ScheduleSchema.index({ deletedAt: 1 });
 ScheduleSchema.index({ examCenterId: 1, examDate: 1 });
 ScheduleSchema.index({ examDate: 1, status: 1 });
 
-// ==================== VIRTUAL FIELDS ====================
 ScheduleSchema.virtual('isDeleted').get(function () {
   return this.deletedAt !== null;
 });
@@ -138,8 +140,6 @@ ScheduleSchema.virtual('isFull').get(function () {
   return this.registeredStudents >= this.totalStudents;
 });
 
-// ==================== PRE-SAVE HOOK (✅ FIXED) ====================
-// ✅ next() hata diya, async laga diya
 ScheduleSchema.pre('save', async function () {
   if (this.examDate && typeof this.examDate === 'string') {
     this.examDate = new Date(this.examDate);
@@ -157,11 +157,9 @@ ScheduleSchema.pre('save', async function () {
       .join('')
       .slice(0, 10);
   }
-
-  // ✅ next() call NAHI karna
 });
 
-// ==================== INSTANCE METHODS ====================
+
 
 ScheduleSchema.methods.softDelete = async function () {
   this.deletedAt = new Date();
@@ -175,7 +173,6 @@ ScheduleSchema.methods.restore = async function () {
   await this.save();
 };
 
-// ==================== STATIC METHODS ====================
 
 ScheduleSchema.statics.getStats = async function () {
   const now = new Date();
@@ -214,5 +211,5 @@ ScheduleSchema.statics.getStats = async function () {
   };
 };
 
-// ==================== EXPORT ====================
+
 module.exports = mongoose.model('Schedule', ScheduleSchema);
