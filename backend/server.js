@@ -20,9 +20,6 @@ const scheduleRoutes = require('./src/routes/scheduleRoutes');
 //LOAD ENVIRONMENT 
 dotenv.config();
 
-//  CONNECT DATABASE 
-connectDB();
-
 //INITIALIZE EXPRESS
 const app = express();
 
@@ -31,7 +28,7 @@ app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     crossOriginOpenerPolicy: { policy: 'same-origin' },
-    crossOriginEmbedderPolicy: { policy: 'require-corp' },
+    crossOriginEmbedderPolicy: false, // <-- Vercel ke liye ye change karo
   })
 );
 
@@ -131,7 +128,7 @@ app.get('/', (req, res) => {
           geocode: 'POST /api/route/geocode',
         },
       },
-      notifications: { // ✅ NEW: Notification endpoints
+      notifications: {
         base: '/api/notifications',
         methods: {
           myNotifications: 'GET /api/notifications/my',
@@ -184,9 +181,13 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-// ✅ IMPORTANT: Vercel ke liye ye change kiya hai
+// ✅ Vercel ke liye yeh IMPORTANT hai (sirf export):
+module.exports = app;
+
+// ✅ Locally (node server.js) chalane ke liye:
 if (require.main === module) {
   const startServer = () => {
+    connectDB(); // <-- Database ab yahan connect hoga
     try {
       app.listen(PORT, () => {
         console.log(`Server running on: http://localhost:${PORT}`);
@@ -214,6 +215,3 @@ if (require.main === module) {
     process.exit(0);
   });
 }
-
-// ✅ Vercel ke liye yeh IMPORTANT hai:
-module.exports = app;
