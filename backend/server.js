@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -28,7 +27,6 @@ connectDB();
 const app = express();
 
 //  SECURITY MIDDLEWARE 
-
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -76,7 +74,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ==================== API DOCUMENTATION ====================
-
 
 app.get('/', (req, res) => {
   res.status(200).json({
@@ -187,46 +184,36 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-let server;
+// ✅ IMPORTANT: Vercel ke liye ye change kiya hai
+if (require.main === module) {
+  const startServer = () => {
+    try {
+      app.listen(PORT, () => {
+        console.log(`Server running on: http://localhost:${PORT}`);
+      });
+    } catch (error) {
+      console.error('Failed to start server:', error.message);
+      process.exit(1);
+    }
+  };
+  
+  startServer();
 
-const startServer = () => {
-  try {
-    server = app.listen(PORT, () => {
-      console.log(`Server running on: http://localhost:${PORT}`);
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error.message);
+  process.on('unhandledRejection', (err) => {
+    console.error(' Unhandled Rejection:', err);
     process.exit(1);
-  }
-};
+  });
 
+  process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+    process.exit(1);
+  });
 
-process.on('unhandledRejection', (err) => {
-  console.error(' Unhandled Rejection:', err);
-
-  if (server) server.close(() => process.exit(1));
-  process.exit(1);
-});
-
-
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
-  process.exit(1);
-});
-
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Shutting down gracefully...');
-  if (server) {
-    server.close(() => {
-      console.log('Process terminated');
-      process.exit(0);
-    });
-  } else {
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM received. Shutting down gracefully...');
     process.exit(0);
-  }
-});
+  });
+}
 
-
+// ✅ Vercel ke liye yeh IMPORTANT hai:
 module.exports = app;
-
-startServer();
