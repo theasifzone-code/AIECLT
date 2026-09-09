@@ -34,7 +34,7 @@ app.use(
 
 // CORS - Cross-Origin 
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173' || 'https://aieclt.vercel.app',
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -181,10 +181,9 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-// ✅ Vercel ke liye yeh IMPORTANT hai (sirf export):
 module.exports = app;
 
-// ✅ Locally (node server.js) chalane ke liye:
+
 if (require.main === module) {
   const startServer = () => {
     connectDB(); // <-- Database ab yahan connect hoga
