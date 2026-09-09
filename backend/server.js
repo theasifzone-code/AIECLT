@@ -34,7 +34,7 @@ app.use(
 
 // CORS - Cross-Origin 
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173' || 'https://aieclt.vercel.app',
+  origin: '*', // Sab domains allow karne ke liye
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
