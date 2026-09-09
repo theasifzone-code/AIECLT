@@ -1,5 +1,12 @@
 const mongoose = require('mongoose');
+
+let cachedConnection = null;
+
 const connectDB = async () => {
+  if (cachedConnection && mongoose.connection.readyState === 1) {
+    return cachedConnection;
+  }
+
   try {
     const conn = await mongoose.connect(process.env.MONGO_URI, {
       serverSelectionTimeoutMS: 5000,
@@ -8,21 +15,13 @@ const connectDB = async () => {
       maxPoolSize: 10,
       minPoolSize: 2,
     });
-    mongoose.connection.on('error', (err) => {
-      console.error('MongoDB connection error:', err.message);
-    });
-    mongoose.connection.on('disconnected', () => {
-      console.warn('MongoDB disconnected');
-    });
+
+    cachedConnection = conn;
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
     return conn;
   } catch (error) {
-    console.error(error);
-    if (process.env.NODE_ENV === 'production') {
-      console.log('Retrying connection in 5 seconds...');
-      setTimeout(() => connectDB(), 5000);
-    } else {
-      process.exit(1);
-    }
+    console.error('MongoDB connection error:', error.message);
+    throw error; // Serverless function mein error throw karna behtar hai
   }
 };
 
