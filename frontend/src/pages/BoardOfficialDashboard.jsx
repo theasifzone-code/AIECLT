@@ -1,4 +1,3 @@
-// components/BoardOfficialDashboard.jsx — Modernized + center-aware
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -18,42 +17,34 @@ import {
   PencilIcon,
   PaperAirplaneIcon,
   UserGroupIcon,
-  AcademicCapIcon,
   CheckCircleIcon,
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 
-
-// ============================================================
-// DESIGN TOKENS
-// ============================================================
 const ui = {
-  page: 'bg-[#0B0E14] text-slate-100',
+  page: 'bg-[#080A11] text-slate-100',
   panel:
-    'bg-[#12151F] border border-white/[0.06] rounded-2xl shadow-[0_8px_32px_-8px_rgba(0,0,0,0.6)]',
+    'bg-gradient-to-b from-[#131725]/80 to-[#0F1320]/80 backdrop-blur-xl border border-white/[0.07] rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)]',
   input:
-    'w-full px-4 py-3 bg-[#0B0E14] border border-white/[0.08] rounded-xl text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-teal-400/60 focus:ring-2 focus:ring-teal-400/20 transition-all duration-200',
-  label: 'block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide',
+    'w-full px-4 py-3 bg-[#0A0D16] border border-white/[0.08] rounded-xl text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-teal-400/60 focus:ring-2 focus:ring-teal-400/20 transition-all duration-200',
+  label:
+    'block text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-widest',
   btnPrimary:
-    'inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-[#04120D] text-sm font-bold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-teal-500/20 hover:shadow-teal-500/30 active:scale-[0.98]',
+    'inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-500 hover:from-teal-400 hover:via-emerald-400 hover:to-teal-400 text-[#04120D] text-sm font-bold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-teal-500/30 hover:shadow-teal-400/40 active:scale-[0.98]',
   btnGhost:
-    'inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 text-xs font-medium transition-all duration-200 border border-white/[0.08] hover:border-white/[0.15]',
+    'inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.09] text-slate-300 text-xs font-medium transition-all duration-200 border border-white/[0.08] hover:border-white/[0.18]',
   iconBtn:
     'p-2 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-white/[0.06] transition-all duration-200',
 };
 
 const statusStyles = {
-  upcoming: 'bg-sky-500/10 text-sky-300 ring-1 ring-sky-500/25',
-  ongoing: 'bg-emerald-500/10 text-emerald-300 ring-1 ring-emerald-500/25',
-  completed: 'bg-slate-500/10 text-slate-300 ring-1 ring-slate-500/25',
-  cancelled: 'bg-rose-500/10 text-rose-300 ring-1 ring-rose-500/25',
-  postponed: 'bg-amber-500/10 text-amber-300 ring-1 ring-amber-500/25',
+  upcoming: 'bg-sky-500/15 text-sky-300 ring-1 ring-sky-500/30',
+  ongoing: 'bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30',
+  completed: 'bg-slate-500/15 text-slate-300 ring-1 ring-slate-500/30',
+  cancelled: 'bg-rose-500/15 text-rose-300 ring-1 ring-rose-500/30',
+  postponed: 'bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/30',
 };
 
-
-// ============================================================
-// BOARD OFFICIAL DASHBOARD
-// ============================================================
 const BoardOfficialDashboard = () => {
   const { user, logout, myCenter, myCenterId } = useAuth();
 
@@ -74,7 +65,6 @@ const BoardOfficialDashboard = () => {
     totalStudents: 0,
   });
 
-  // ✅ STUDENTS STATE
   const [students, setStudents] = useState([]);
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [studentsSearch, setStudentsSearch] = useState('');
@@ -106,10 +96,6 @@ const BoardOfficialDashboard = () => {
     priority: 'medium',
   });
 
-
-  // ============================================================
-  // LIFECYCLE
-  // ============================================================
   useEffect(() => {
     if (!user || (user.role !== 'board_official' && user.role !== 'admin')) {
       window.location.href = '/login';
@@ -127,7 +113,6 @@ const BoardOfficialDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // ✅ Fetch students when tab changes
   useEffect(() => {
     if (activeTab === 'students' && myCenterId) {
       fetchStudents();
@@ -135,7 +120,6 @@ const BoardOfficialDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, myCenterId]);
 
-  // ✅ Debounced students search/filter
   useEffect(() => {
     if (activeTab !== 'students' || !myCenterId) return;
 
@@ -147,10 +131,6 @@ const BoardOfficialDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentsSearch, studentsGrade]);
 
-
-  // ============================================================
-  // API CALLS
-  // ============================================================
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -191,7 +171,6 @@ const BoardOfficialDashboard = () => {
     }
   };
 
-  // ✅ NEW: Fetch students of own center
   const fetchStudents = async () => {
     if (!myCenterId) {
       setStudents([]);
@@ -228,10 +207,6 @@ const BoardOfficialDashboard = () => {
     }
   };
 
-
-  // ============================================================
-  // NOTIFICATION
-  // ============================================================
   const handleNotificationSubmit = async (e) => {
     e.preventDefault();
 
@@ -257,10 +232,6 @@ const BoardOfficialDashboard = () => {
     }
   };
 
-
-  // ============================================================
-  // SCHEDULE CRUD
-  // ============================================================
   const handleScheduleSubmit = async (e) => {
     e.preventDefault();
 
@@ -343,10 +314,6 @@ const BoardOfficialDashboard = () => {
     }
   };
 
-
-  // ============================================================
-  // HELPERS
-  // ============================================================
   const handleSort = (field) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -386,43 +353,51 @@ const BoardOfficialDashboard = () => {
       return 0;
     });
 
-
-  // ============================================================
-  // SUBCOMPONENTS
-  // ============================================================
   const EmptyState = ({ icon: Icon, title, hint }) => (
-    <div className="flex flex-col items-center justify-center text-center py-16 px-6">
-      <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] mb-4">
-        <Icon className="w-8 h-8 text-slate-600" />
+    <div className="flex flex-col items-center justify-center text-center py-20 px-6">
+      <div className="relative mb-6">
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 to-emerald-500/10 rounded-2xl blur-xl" />
+        <div className="relative p-5 rounded-2xl bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/[0.08]">
+          <Icon className="w-9 h-9 text-slate-500" />
+        </div>
       </div>
-      <p className="text-sm font-semibold text-slate-300">{title}</p>
-      {hint && <p className="text-xs text-slate-500 mt-1.5 max-w-xs">{hint}</p>}
+      <p className="text-base font-bold text-slate-200">{title}</p>
+      {hint && (
+        <p className="text-sm text-slate-500 mt-2 max-w-sm leading-relaxed">
+          {hint}
+        </p>
+      )}
     </div>
   );
 
   const StatCard = ({ icon: Icon, label, value, color = 'teal' }) => {
     const colorClasses = {
-      teal: 'from-teal-500/20 to-emerald-500/10 text-teal-400 ring-teal-500/20',
-      sky: 'from-sky-500/20 to-blue-500/10 text-sky-400 ring-sky-500/20',
+      teal: 'from-teal-500/25 to-emerald-500/10 text-teal-300 ring-teal-500/30',
+      sky: 'from-sky-500/25 to-blue-500/10 text-sky-300 ring-sky-500/30',
       emerald:
-        'from-emerald-500/20 to-green-500/10 text-emerald-400 ring-emerald-500/20',
+        'from-emerald-500/25 to-green-500/10 text-emerald-300 ring-emerald-500/30',
       violet:
-        'from-violet-500/20 to-purple-500/10 text-violet-400 ring-violet-500/20',
+        'from-violet-500/25 to-purple-500/10 text-violet-300 ring-violet-500/30',
     };
 
     return (
-      <div className={`${ui.panel} p-4 sm:p-5`}>
+      <div
+        className={`${ui.panel} p-4 sm:p-5 hover:border-white/[0.15] transition-all duration-300 group`}
+      >
         <div className="flex items-center gap-3">
           <div
-            className={`p-2.5 rounded-xl bg-gradient-to-br ring-1 ${colorClasses[color]}`}
+            className={`relative p-2.5 rounded-xl bg-gradient-to-br ring-1 ${colorClasses[color]} group-hover:scale-110 transition-transform`}
           >
-            <Icon className="w-5 h-5" />
+            <div className="absolute inset-0 rounded-xl bg-current opacity-20 blur-md" />
+            <Icon className="relative w-5 h-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
               {label}
             </p>
-            <p className="text-2xl font-bold text-slate-100 mt-0.5">{value}</p>
+            <p className="text-2xl font-black text-slate-100 mt-0.5 tabular-nums">
+              {value}
+            </p>
           </div>
         </div>
       </div>
@@ -430,7 +405,7 @@ const BoardOfficialDashboard = () => {
   };
 
   const NavList = ({ onNavigate }) => (
-    <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+    <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
       {menuItems.map((item) => {
         const Icon = item.icon;
         const isActive = activeTab === item.id;
@@ -441,20 +416,24 @@ const BoardOfficialDashboard = () => {
               setActiveTab(item.id);
               onNavigate?.();
             }}
-            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all duration-200 relative text-sm font-medium group ${
+            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all duration-300 relative text-sm font-semibold group ${
               isActive
-                ? 'bg-gradient-to-r from-teal-500/15 to-emerald-500/5 text-teal-300 ring-1 ring-teal-500/20'
+                ? 'bg-gradient-to-r from-teal-500/20 via-emerald-500/10 to-transparent text-teal-200 ring-1 ring-teal-500/30 shadow-[0_0_20px_-5px_rgba(20,184,166,0.3)]'
                 : 'text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]'
             }`}
           >
             {isActive && (
-              <span className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-teal-400 to-emerald-400" />
+              <span className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-teal-400 to-emerald-400 shadow-[0_0_10px_rgba(20,184,166,0.8)]" />
             )}
-            <Icon
-              className={`w-5 h-5 flex-shrink-0 ${
-                isActive ? 'text-teal-300' : 'text-slate-500 group-hover:text-slate-300'
+            <div
+              className={`p-1.5 rounded-lg transition-all duration-300 ${
+                isActive
+                  ? 'bg-teal-500/20 text-teal-300'
+                  : 'bg-white/[0.03] text-slate-500 group-hover:text-slate-300'
               }`}
-            />
+            >
+              <Icon className="w-4 h-4 flex-shrink-0" />
+            </div>
             <span className="truncate">{item.label}</span>
           </button>
         );
@@ -464,7 +443,7 @@ const BoardOfficialDashboard = () => {
 
   const SortHeader = ({ field, children }) => (
     <th
-      className="px-4 py-3 text-left text-xs font-semibold text-slate-500 cursor-pointer hover:text-slate-200 transition uppercase tracking-wide"
+      className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 cursor-pointer hover:text-slate-200 transition uppercase tracking-widest"
       onClick={() => handleSort(field)}
     >
       <div className="flex items-center gap-1">
@@ -479,24 +458,19 @@ const BoardOfficialDashboard = () => {
     </th>
   );
 
-
-  // ============================================================
-  // RENDER
-  // ============================================================
   return (
     <div className={`flex h-screen ${ui.page}`}>
-      {/* ============ MOBILE DRAWER ============ */}
       {mobileSidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/80 backdrop-blur-md"
             onClick={() => setMobileSidebarOpen(false)}
           />
-          <aside className="absolute left-0 top-0 bottom-0 w-72 max-w-[85vw] bg-[#0D1119] border-r border-white/[0.06] flex flex-col">
+          <aside className="absolute left-0 top-0 bottom-0 w-72 max-w-[85vw] bg-gradient-to-b from-[#0D1119] to-[#0A0D16] border-r border-white/[0.06] flex flex-col animate-in slide-in-from-left duration-300">
             <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-gradient-to-br from-teal-500/20 to-emerald-500/10 rounded-xl ring-1 ring-teal-500/20">
-                  <BuildingOfficeIcon className="w-5 h-5 text-teal-400" />
+                <div className="p-2 bg-gradient-to-br from-teal-500/25 to-emerald-500/10 rounded-xl ring-1 ring-teal-500/30">
+                  <BuildingOfficeIcon className="w-5 h-5 text-teal-300" />
                 </div>
                 <span className="text-slate-100 font-bold">Board Official</span>
               </div>
@@ -510,7 +484,7 @@ const BoardOfficialDashboard = () => {
             <NavList onNavigate={() => setMobileSidebarOpen(false)} />
             <div className="p-3 border-t border-white/[0.06]">
               <div className="flex items-center gap-3 p-2">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-500/30 to-emerald-500/20 flex items-center justify-center text-teal-200 font-bold text-sm ring-1 ring-teal-500/20">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-500/40 to-emerald-500/25 flex items-center justify-center text-teal-100 font-bold text-sm ring-1 ring-teal-500/30">
                   {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -533,11 +507,13 @@ const BoardOfficialDashboard = () => {
         </div>
       )}
 
-      {/* ============ DESKTOP SIDEBAR ============ */}
-      <aside className="hidden lg:flex w-64 bg-[#0D1119] border-r border-white/[0.06] flex-col shrink-0">
+      <aside className="hidden lg:flex w-64 bg-gradient-to-b from-[#0D1119] to-[#0A0D16] border-r border-white/[0.06] flex-col shrink-0">
         <div className="p-5 border-b border-white/[0.06] flex items-center gap-3">
-          <div className="p-2.5 bg-gradient-to-br from-teal-500/20 to-emerald-500/10 rounded-xl ring-1 ring-teal-500/20">
-            <BuildingOfficeIcon className="w-5 h-5 text-teal-400" />
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-teal-500/40 to-emerald-500/20 rounded-xl blur-lg" />
+            <div className="relative p-2.5 bg-gradient-to-br from-teal-500/25 to-emerald-500/10 rounded-xl ring-1 ring-teal-500/30">
+              <BuildingOfficeIcon className="w-5 h-5 text-teal-300" />
+            </div>
           </div>
           <div className="min-w-0">
             <span className="text-slate-100 font-bold block leading-tight truncate">
@@ -551,9 +527,9 @@ const BoardOfficialDashboard = () => {
 
         <NavList />
 
-        <div className="p-3 m-3 bg-white/[0.03] rounded-xl border border-white/[0.06]">
+        <div className="p-3 m-3 bg-gradient-to-br from-white/[0.05] to-white/[0.02] rounded-xl border border-white/[0.06]">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-500/30 to-emerald-500/20 flex items-center justify-center text-teal-200 font-bold text-sm shrink-0 ring-1 ring-teal-500/20">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-500/40 to-emerald-500/25 flex items-center justify-center text-teal-100 font-bold text-sm shrink-0 ring-1 ring-teal-500/30">
               {user?.name?.charAt(0)?.toUpperCase() || 'U'}
             </div>
             <div className="flex-1 min-w-0">
@@ -575,9 +551,8 @@ const BoardOfficialDashboard = () => {
         </div>
       </aside>
 
-      {/* ============ MAIN ============ */}
       <main className="flex-1 overflow-y-auto min-w-0">
-        <header className="bg-[#0A0D14]/80 backdrop-blur-xl border-b border-white/[0.06] sticky top-0 z-30 px-4 sm:px-6 py-4">
+        <header className="bg-[#080A11]/80 backdrop-blur-xl border-b border-white/[0.06] sticky top-0 z-30 px-4 sm:px-6 py-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3 min-w-0">
               <button
@@ -627,7 +602,6 @@ const BoardOfficialDashboard = () => {
         </header>
 
         <div className="p-4 sm:p-6 lg:p-8 w-full max-w-[1600px] mx-auto">
-          {/* ========== STATS ========== */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
             <StatCard
               icon={CalendarIcon}
@@ -664,14 +638,13 @@ const BoardOfficialDashboard = () => {
             </div>
           ) : (
             <>
-              {/* ========== SCHEDULES TAB ========== */}
               {activeTab === 'schedules' && (
                 <div>
                   {showScheduleForm && (
                     <div className={`mb-6 ${ui.panel} p-5 sm:p-6`}>
                       <div className="flex items-center justify-between mb-5">
                         <h3 className="text-base font-bold text-slate-100 flex items-center gap-3">
-                          <span className="p-2 bg-gradient-to-br from-teal-500/20 to-emerald-500/10 text-teal-400 rounded-xl ring-1 ring-teal-500/20">
+                          <span className="p-2 bg-gradient-to-br from-teal-500/25 to-emerald-500/10 text-teal-300 rounded-xl ring-1 ring-teal-500/30">
                             <CalendarIcon className="w-5 h-5" />
                           </span>
                           {editingSchedule ? 'Edit Schedule' : 'New Schedule'}
@@ -687,10 +660,10 @@ const BoardOfficialDashboard = () => {
                       >
                         <div className="sm:col-span-2">
                           <label className={ui.label}>Exam Center</label>
-                          <div className="px-4 py-3 bg-emerald-500/[0.06] border border-emerald-500/20 rounded-xl flex items-center gap-3">
+                          <div className="px-4 py-3 bg-gradient-to-r from-emerald-500/[0.08] to-teal-500/[0.04] border border-emerald-500/25 rounded-xl flex items-center gap-3">
                             <BuildingOfficeIcon className="w-5 h-5 text-emerald-400 shrink-0" />
                             <div className="min-w-0">
-                              <p className="text-sm font-semibold text-slate-100 truncate">
+                              <p className="text-sm font-bold text-slate-100 truncate">
                                 {myCenter?.name || 'Your Center'}
                               </p>
                               <p className="text-xs text-slate-500 font-mono">
@@ -699,7 +672,8 @@ const BoardOfficialDashboard = () => {
                             </div>
                           </div>
                           <p className="text-[10px] text-slate-500 mt-1.5">
-                            Schedules are automatically created for your assigned center.
+                            Schedules are automatically created for your assigned
+                            center.
                           </p>
                         </div>
 
@@ -741,7 +715,10 @@ const BoardOfficialDashboard = () => {
                           <select
                             value={scheduleData.grade}
                             onChange={(e) =>
-                              setScheduleData({ ...scheduleData, grade: e.target.value })
+                              setScheduleData({
+                                ...scheduleData,
+                                grade: e.target.value,
+                              })
                             }
                             className={ui.input}
                           >
@@ -855,7 +832,10 @@ const BoardOfficialDashboard = () => {
                         </div>
 
                         <div className="sm:col-span-2 flex flex-col sm:flex-row gap-3 pt-2">
-                          <button type="submit" className={`${ui.btnPrimary} flex-1`}>
+                          <button
+                            type="submit"
+                            className={`${ui.btnPrimary} flex-1`}
+                          >
                             {editingSchedule ? 'Update Schedule' : 'Create Schedule'}
                           </button>
                           <button
@@ -887,23 +867,26 @@ const BoardOfficialDashboard = () => {
                               <SortHeader field="subject">Subject</SortHeader>
                               <SortHeader field="grade">Grade</SortHeader>
                               <SortHeader field="examDate">Date</SortHeader>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                              <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                                 Time
                               </th>
-                              <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                              <th className="px-4 py-3 text-center text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                                 Students
                               </th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                              <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                                 Status
                               </th>
-                              <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                              <th className="px-4 py-3 text-center text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                                 Actions
                               </th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-white/[0.04]">
                             {filteredSchedules.map((s) => (
-                              <tr key={s._id} className="hover:bg-white/[0.02] transition">
+                              <tr
+                                key={s._id}
+                                className="hover:bg-white/[0.02] transition"
+                              >
                                 <td className="px-4 py-4">
                                   <p className="font-semibold text-slate-100">
                                     {s.subject}
@@ -916,11 +899,13 @@ const BoardOfficialDashboard = () => {
                                 </td>
                                 <td className="px-4 py-4">
                                   {s.grade ? (
-                                    <span className="px-2.5 py-1 rounded-lg bg-white/[0.04] text-xs font-medium text-slate-300 border border-white/[0.06]">
+                                    <span className="px-2.5 py-1 rounded-lg bg-white/[0.04] text-xs font-bold text-slate-300 border border-white/[0.06]">
                                       {s.grade}th
                                     </span>
                                   ) : (
-                                    <span className="text-slate-600 text-xs">All</span>
+                                    <span className="text-slate-600 text-xs">
+                                      All
+                                    </span>
                                   )}
                                 </td>
                                 <td className="px-4 py-4 text-slate-400">
@@ -934,7 +919,7 @@ const BoardOfficialDashboard = () => {
                                   {s.examTime}
                                 </td>
                                 <td className="px-4 py-4 text-center">
-                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-violet-500/10 text-violet-300 ring-1 ring-violet-500/20">
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-violet-500/15 text-violet-300 ring-1 ring-violet-500/25">
                                     {s.totalStudents || 0}
                                   </span>
                                 </td>
@@ -948,19 +933,34 @@ const BoardOfficialDashboard = () => {
                                       s.status
                                     )}`}
                                   >
-                                    <option value="upcoming" className="bg-[#12151F] text-slate-100">
+                                    <option
+                                      value="upcoming"
+                                      className="bg-[#12151F] text-slate-100"
+                                    >
                                       Upcoming
                                     </option>
-                                    <option value="ongoing" className="bg-[#12151F] text-slate-100">
+                                    <option
+                                      value="ongoing"
+                                      className="bg-[#12151F] text-slate-100"
+                                    >
                                       Ongoing
                                     </option>
-                                    <option value="completed" className="bg-[#12151F] text-slate-100">
+                                    <option
+                                      value="completed"
+                                      className="bg-[#12151F] text-slate-100"
+                                    >
                                       Completed
                                     </option>
-                                    <option value="cancelled" className="bg-[#12151F] text-slate-100">
+                                    <option
+                                      value="cancelled"
+                                      className="bg-[#12151F] text-slate-100"
+                                    >
                                       Cancelled
                                     </option>
-                                    <option value="postponed" className="bg-[#12151F] text-slate-100">
+                                    <option
+                                      value="postponed"
+                                      className="bg-[#12151F] text-slate-100"
+                                    >
                                       Postponed
                                     </option>
                                   </select>
@@ -994,7 +994,9 @@ const BoardOfficialDashboard = () => {
                           <div key={s._id} className={`${ui.panel} p-4`}>
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
-                                <p className="font-bold text-slate-100">{s.subject}</p>
+                                <p className="font-bold text-slate-100">
+                                  {s.subject}
+                                </p>
                                 {s.grade && (
                                   <p className="text-xs text-slate-500 mt-0.5">
                                     Grade {s.grade}th
@@ -1023,7 +1025,10 @@ const BoardOfficialDashboard = () => {
                               </span>
                             </div>
                             <div className="flex items-center justify-end gap-1 mt-3">
-                              <button onClick={() => editSchedule(s)} className={ui.iconBtn}>
+                              <button
+                                onClick={() => editSchedule(s)}
+                                className={ui.iconBtn}
+                              >
                                 <PencilIcon className="w-4 h-4" />
                               </button>
                               <button
@@ -1041,13 +1046,12 @@ const BoardOfficialDashboard = () => {
                 </div>
               )}
 
-              {/* ========== STUDENTS TAB ========== */}
               {activeTab === 'students' && (
                 <div className="space-y-5">
                   <div className={`${ui.panel} p-5`}>
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
                       <div className="flex items-center gap-3">
-                        <span className="p-2 bg-gradient-to-br from-violet-500/20 to-purple-500/10 text-violet-400 rounded-xl ring-1 ring-violet-500/20">
+                        <span className="relative p-2 bg-gradient-to-br from-violet-500/25 to-purple-500/10 text-violet-300 rounded-xl ring-1 ring-violet-500/30">
                           <UserGroupIcon className="w-5 h-5" />
                         </span>
                         <div>
@@ -1082,14 +1086,14 @@ const BoardOfficialDashboard = () => {
                           placeholder="Search by name, email, roll number..."
                           value={studentsSearch}
                           onChange={(e) => setStudentsSearch(e.target.value)}
-                          className="w-full pl-9 pr-4 py-2.5 bg-[#0B0E14] border border-white/[0.08] rounded-xl text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/20 transition-all"
+                          className="w-full pl-9 pr-4 py-2.5 bg-[#0A0D16] border border-white/[0.08] rounded-xl text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/20 transition-all"
                         />
                       </div>
 
                       <select
                         value={studentsGrade}
                         onChange={(e) => setStudentsGrade(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-[#0B0E14] border border-white/[0.08] rounded-xl text-sm text-slate-100 outline-none focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/20 transition-all"
+                        className="w-full px-4 py-2.5 bg-[#0A0D16] border border-white/[0.08] rounded-xl text-sm text-slate-100 outline-none focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/20 transition-all"
                       >
                         <option value="">All Grades</option>
                         <option value="9">9th Class</option>
@@ -1102,10 +1106,14 @@ const BoardOfficialDashboard = () => {
                   </div>
 
                   {studentsLoading ? (
-                    <div className={`${ui.panel} p-12 flex items-center justify-center`}>
+                    <div
+                      className={`${ui.panel} p-12 flex items-center justify-center`}
+                    >
                       <div className="flex flex-col items-center gap-3">
                         <div className="w-8 h-8 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
-                        <p className="text-sm text-slate-500">Loading students...</p>
+                        <p className="text-sm text-slate-500">
+                          Loading students...
+                        </p>
                       </div>
                     </div>
                   ) : students.length === 0 ? (
@@ -1126,19 +1134,19 @@ const BoardOfficialDashboard = () => {
                         <table className="w-full text-sm">
                           <thead className="bg-white/[0.03] border-b border-white/[0.06]">
                             <tr>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                              <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                                 Roll #
                               </th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                              <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                                 Name
                               </th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                              <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                                 Email
                               </th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                              <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                                 Grade
                               </th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                              <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                                 Board
                               </th>
                             </tr>
@@ -1149,13 +1157,14 @@ const BoardOfficialDashboard = () => {
                                 key={student._id}
                                 className="hover:bg-white/[0.02] transition"
                               >
-                                <td className="px-4 py-4 font-mono text-xs text-teal-300">
+                                <td className="px-4 py-4 font-mono text-xs font-bold text-teal-300">
                                   {student.rollNumber || '—'}
                                 </td>
                                 <td className="px-4 py-4">
                                   <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500/30 to-purple-500/20 flex items-center justify-center text-violet-200 font-bold text-xs ring-1 ring-violet-500/20">
-                                      {student.name?.charAt(0)?.toUpperCase() || 'S'}
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500/40 to-purple-500/25 flex items-center justify-center text-violet-100 font-bold text-xs ring-1 ring-violet-500/30">
+                                      {student.name?.charAt(0)?.toUpperCase() ||
+                                        'S'}
                                     </div>
                                     <span className="font-semibold text-slate-100">
                                       {student.name}
@@ -1167,7 +1176,7 @@ const BoardOfficialDashboard = () => {
                                 </td>
                                 <td className="px-4 py-4">
                                   {student.grade ? (
-                                    <span className="px-2.5 py-1 rounded-lg bg-white/[0.04] text-xs font-medium text-slate-300 border border-white/[0.06]">
+                                    <span className="px-2.5 py-1 rounded-lg bg-white/[0.04] text-xs font-bold text-slate-300 border border-white/[0.06]">
                                       {student.grade}th
                                     </span>
                                   ) : (
@@ -1187,11 +1196,11 @@ const BoardOfficialDashboard = () => {
                         {students.map((student) => (
                           <div key={student._id} className={`${ui.panel} p-4`}>
                             <div className="flex items-start gap-3">
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500/30 to-purple-500/20 flex items-center justify-center text-violet-200 font-bold text-sm ring-1 ring-violet-500/20 shrink-0">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500/40 to-purple-500/25 flex items-center justify-center text-violet-100 font-bold text-sm ring-1 ring-violet-500/30 shrink-0">
                                 {student.name?.charAt(0)?.toUpperCase() || 'S'}
                               </div>
                               <div className="min-w-0 flex-1">
-                                <p className="font-semibold text-slate-100 truncate">
+                                <p className="font-bold text-slate-100 truncate">
                                   {student.name}
                                 </p>
                                 <p className="text-xs text-slate-500 truncate">
@@ -1199,12 +1208,12 @@ const BoardOfficialDashboard = () => {
                                 </p>
                                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                                   {student.rollNumber && (
-                                    <span className="text-xs text-teal-300 font-mono">
+                                    <span className="text-xs text-teal-300 font-mono font-bold">
                                       #{student.rollNumber}
                                     </span>
                                   )}
                                   {student.grade && (
-                                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-violet-500/10 text-violet-300">
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-violet-500/15 text-violet-300 ring-1 ring-violet-500/25">
                                       {student.grade}th
                                     </span>
                                   )}
@@ -1223,13 +1232,13 @@ const BoardOfficialDashboard = () => {
                 </div>
               )}
 
-              {/* ========== NOTIFICATIONS TAB ========== */}
               {activeTab === 'notifications' && (
                 <div className="space-y-6">
                   <div className={`${ui.panel} p-5 sm:p-6`}>
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="p-2.5 bg-gradient-to-br from-amber-500/20 to-orange-500/10 rounded-xl ring-1 ring-amber-500/20">
-                        <BellIcon className="w-5 h-5 text-amber-400" />
+                      <div className="relative p-2.5 bg-gradient-to-br from-amber-500/25 to-orange-500/10 rounded-xl ring-1 ring-amber-500/30">
+                        <div className="absolute inset-0 rounded-xl bg-amber-500/20 blur-md" />
+                        <BellIcon className="relative w-5 h-5 text-amber-300" />
                       </div>
                       <div>
                         <h3 className="text-base font-bold text-slate-100">
@@ -1320,7 +1329,10 @@ const BoardOfficialDashboard = () => {
                         </div>
                       </div>
 
-                      <button type="submit" className={`${ui.btnPrimary} w-full`}>
+                      <button
+                        type="submit"
+                        className={`${ui.btnPrimary} w-full`}
+                      >
                         <PaperAirplaneIcon className="w-4 h-4" />
                         Send to My Center Students
                       </button>
@@ -1328,7 +1340,7 @@ const BoardOfficialDashboard = () => {
                   </div>
 
                   <div>
-                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">
+                    <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3">
                       Recent Notifications
                     </h4>
                     <div className="space-y-3">
@@ -1342,17 +1354,20 @@ const BoardOfficialDashboard = () => {
                         </div>
                       ) : (
                         notifications.map((n) => (
-                          <div key={n._id} className={`${ui.panel} p-4`}>
+                          <div
+                            key={n._id}
+                            className={`${ui.panel} p-4 hover:border-amber-500/20 transition-all`}
+                          >
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
-                                <p className="font-semibold text-slate-100 text-sm">
+                                <p className="font-bold text-slate-100 text-sm">
                                   {n.title}
                                 </p>
                                 <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
                                   {n.message}
                                 </p>
                                 {n.targetGrade && (
-                                  <span className="inline-block mt-2 px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-500/10 text-amber-300">
+                                  <span className="inline-block mt-2 px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/25">
                                     Grade {n.targetGrade}th
                                   </span>
                                 )}

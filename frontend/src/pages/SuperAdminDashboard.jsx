@@ -1,4 +1,3 @@
-// components/SuperAdminDashboard.jsx — Modernized + center-aware
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -29,48 +28,40 @@ import {
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 
-
-// ============================================================
-// DESIGN TOKENS
-// ============================================================
 const ui = {
-  page: 'bg-[#0B0E14] text-slate-100',
+  page: 'bg-[#080A11] text-slate-100',
   panel:
-    'bg-[#12151F] border border-white/[0.06] rounded-2xl shadow-[0_8px_32px_-8px_rgba(0,0,0,0.6)]',
+    'bg-gradient-to-b from-[#131725]/80 to-[#0F1320]/80 backdrop-blur-xl border border-white/[0.07] rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)]',
   input:
-    'w-full px-4 py-3 bg-[#0B0E14] border border-white/[0.08] rounded-xl text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-teal-400/60 focus:ring-2 focus:ring-teal-400/20 transition-all duration-200',
-  label: 'block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide',
+    'w-full px-4 py-3 bg-[#0A0D16] border border-white/[0.08] rounded-xl text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-teal-400/60 focus:ring-2 focus:ring-teal-400/20 transition-all duration-200',
+  label:
+    'block text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-widest',
   btnPrimary:
-    'inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-[#04120D] text-sm font-bold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-teal-500/20 hover:shadow-teal-500/30 active:scale-[0.98]',
+    'inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-500 hover:from-teal-400 hover:via-emerald-400 hover:to-teal-400 text-[#04120D] text-sm font-bold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-teal-500/30 hover:shadow-teal-400/40 active:scale-[0.98]',
   btnGhost:
-    'inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 text-xs font-medium transition-all duration-200 border border-white/[0.08] hover:border-white/[0.15]',
+    'inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.09] text-slate-300 text-xs font-medium transition-all duration-200 border border-white/[0.08] hover:border-white/[0.18]',
   iconBtn:
     'p-2 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-white/[0.06] transition-all duration-200',
 };
 
 const statusStyles = {
-  upcoming: 'bg-sky-500/10 text-sky-300 ring-1 ring-sky-500/25',
-  ongoing: 'bg-emerald-500/10 text-emerald-300 ring-1 ring-emerald-500/25',
-  completed: 'bg-slate-500/10 text-slate-300 ring-1 ring-slate-500/25',
-  cancelled: 'bg-rose-500/10 text-rose-300 ring-1 ring-rose-500/25',
-  postponed: 'bg-amber-500/10 text-amber-300 ring-1 ring-amber-500/25',
+  upcoming: 'bg-sky-500/15 text-sky-300 ring-1 ring-sky-500/30',
+  ongoing: 'bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30',
+  completed: 'bg-slate-500/15 text-slate-300 ring-1 ring-slate-500/30',
+  cancelled: 'bg-rose-500/15 text-rose-300 ring-1 ring-rose-500/30',
+  postponed: 'bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/30',
 };
 
 const roleStyles = {
-  admin: 'bg-rose-500/10 text-rose-300 ring-1 ring-rose-500/25',
-  board_official: 'bg-violet-500/10 text-violet-300 ring-1 ring-violet-500/25',
-  student: 'bg-sky-500/10 text-sky-300 ring-1 ring-sky-500/25',
-  default: 'bg-slate-500/10 text-slate-300 ring-1 ring-slate-500/25',
+  admin: 'bg-rose-500/15 text-rose-300 ring-1 ring-rose-500/30',
+  board_official: 'bg-violet-500/15 text-violet-300 ring-1 ring-violet-500/30',
+  student: 'bg-sky-500/15 text-sky-300 ring-1 ring-sky-500/30',
+  default: 'bg-slate-500/15 text-slate-300 ring-1 ring-slate-500/30',
 };
 
-
-// ============================================================
-// SUPER ADMIN DASHBOARD
-// ============================================================
 const SuperAdminDashboard = () => {
   const { user, logout, getAllUsers } = useAuth();
 
-  // ============= STATE =============
   const [activeTab, setActiveTab] = useState('overview');
   const [users, setUsers] = useState([]);
   const [centers, setCenters] = useState([]);
@@ -83,7 +74,6 @@ const SuperAdminDashboard = () => {
   const [sortField, setSortField] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
 
-  // ============= FORMS =============
   const [showUserForm, setShowUserForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [userFormData, setUserFormData] = useState({
@@ -91,14 +81,11 @@ const SuperAdminDashboard = () => {
     email: '',
     password: '',
     role: 'board_official',
-    // ✅ Student fields
     examCenter: '',
     rollNumber: '',
     grade: '',
     board: '',
-    // ✅ Board official field
     assignedCenter: '',
-    // Common
     city: '',
     phone: '',
   });
@@ -154,8 +141,6 @@ const SuperAdminDashboard = () => {
     upcomingSchedules: 0,
   });
 
-
-  // ============= LIFECYCLE =============
   useEffect(() => {
     if (!user || user.role !== 'admin') {
       window.location.href = '/login';
@@ -165,8 +150,6 @@ const SuperAdminDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-
-  // ============= FETCH DATA =============
   const fetchAllData = async () => {
     setLoading(true);
     try {
@@ -201,12 +184,9 @@ const SuperAdminDashboard = () => {
     }
   };
 
-
-  // ============= USER CRUD =============
   const handleUserSubmit = async (e) => {
     e.preventDefault();
     try {
-      // ✅ Build payload based on role
       const payload = {
         name: userFormData.name,
         email: userFormData.email,
@@ -215,12 +195,10 @@ const SuperAdminDashboard = () => {
         phone: userFormData.phone,
       };
 
-      // Password only on create
       if (!editingUser && userFormData.password) {
         payload.password = userFormData.password;
       }
 
-      // ✅ Student-specific
       if (userFormData.role === 'student') {
         payload.examCenter = userFormData.examCenter || null;
         payload.rollNumber = userFormData.rollNumber || null;
@@ -228,7 +206,6 @@ const SuperAdminDashboard = () => {
         payload.board = userFormData.board || null;
       }
 
-      // ✅ Board official-specific
       if (userFormData.role === 'board_official') {
         payload.assignedCenter = userFormData.assignedCenter || null;
       }
@@ -305,8 +282,6 @@ const SuperAdminDashboard = () => {
     }
   };
 
-
-  // ============= CENTER CRUD =============
   const handleCenterSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -372,8 +347,6 @@ const SuperAdminDashboard = () => {
     }
   };
 
-
-  // ============= SCHEDULE CRUD =============
   const handleScheduleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -442,8 +415,6 @@ const SuperAdminDashboard = () => {
     }
   };
 
-
-  // ============= NOTIFICATION CRUD =============
   const handleNotificationSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -489,8 +460,6 @@ const SuperAdminDashboard = () => {
     }
   };
 
-
-  // ============= HELPERS =============
   const handleSort = (field) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -537,10 +506,8 @@ const SuperAdminDashboard = () => {
     )
     .sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
 
-  // Board officials list (for assigning to centers)
   const boardOfficials = users.filter((u) => u.role === 'board_official');
 
-  // Monthly activity
   const monthlyActivity = useMemo(() => {
     const months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -559,23 +526,19 @@ const SuperAdminDashboard = () => {
     }));
   }, [schedules]);
 
-
-  // ============= MENU =============
   const menuItems = [
-    { id: 'overview', label: 'Overview', icon: HomeIcon },
-    { id: 'users', label: 'Users', icon: UserGroupIcon },
-    { id: 'centers', label: 'Exam Centers', icon: BuildingOfficeIcon },
-    { id: 'schedules', label: 'Schedules', icon: CalendarIcon },
-    { id: 'notifications', label: 'Notifications', icon: BellIcon },
-    { id: 'reports', label: 'Reports', icon: ClipboardDocumentListIcon },
-    { id: 'settings', label: 'Settings', icon: Cog6ToothIcon },
+    { id: 'overview', label: 'Overview', icon: HomeIcon, hint: 'System overview' },
+    { id: 'users', label: 'Users', icon: UserGroupIcon, hint: 'Manage accounts' },
+    { id: 'centers', label: 'Exam Centers', icon: BuildingOfficeIcon, hint: 'Center network' },
+    { id: 'schedules', label: 'Schedules', icon: CalendarIcon, hint: 'Exam timetable' },
+    { id: 'notifications', label: 'Notifications', icon: BellIcon, hint: 'Announcements' },
+    { id: 'reports', label: 'Reports', icon: ClipboardDocumentListIcon, hint: 'Analytics' },
+    { id: 'settings', label: 'Settings', icon: Cog6ToothIcon, hint: 'System config' },
   ];
 
-
-  // ============= SUBCOMPONENTS =============
   const SectionHeader = ({ title, children }) => (
-    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <h3 className="text-base font-bold text-slate-100">{title}</h3>
+    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <h3 className="text-lg font-bold text-slate-100">{title}</h3>
       <div className="flex flex-wrap items-center gap-2">{children}</div>
     </div>
   );
@@ -588,52 +551,52 @@ const SuperAdminDashboard = () => {
         placeholder={placeholder}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="pl-9 pr-3 py-2.5 text-sm bg-white/[0.04] border border-white/[0.08] rounded-xl focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400/60 outline-none w-full sm:w-52 text-slate-100 placeholder-slate-500 transition-all"
+        className="pl-9 pr-3 py-2.5 text-sm bg-white/[0.04] border border-white/[0.08] rounded-xl focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400/60 outline-none w-full sm:w-56 text-slate-100 placeholder-slate-500 transition-all"
       />
     </div>
   );
 
   const EmptyState = ({ icon: Icon, text }) => (
-    <div className="flex flex-col items-center justify-center text-center py-16 px-6">
-      <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] mb-4">
-        <Icon className="w-8 h-8 text-slate-600" />
+    <div className="flex flex-col items-center justify-center text-center py-20 px-6">
+      <div className="relative mb-6">
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 to-emerald-500/10 rounded-2xl blur-xl" />
+        <div className="relative p-5 rounded-2xl bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/[0.08]">
+          <Icon className="w-9 h-9 text-slate-500" />
+        </div>
       </div>
-      <p className="text-sm font-semibold text-slate-300">{text}</p>
+      <p className="text-base font-bold text-slate-200">{text}</p>
     </div>
   );
 
   const StatCard = ({ icon: Icon, label, value, color = 'teal' }) => {
     const colorClasses = {
-      teal: 'from-teal-500/20 to-emerald-500/10 text-teal-400 ring-teal-500/20',
-      sky: 'from-sky-500/20 to-blue-500/10 text-sky-400 ring-sky-500/20',
-      violet:
-        'from-violet-500/20 to-purple-500/10 text-violet-400 ring-violet-500/20',
-      amber:
-        'from-amber-500/20 to-orange-500/10 text-amber-400 ring-amber-500/20',
-      emerald:
-        'from-emerald-500/20 to-green-500/10 text-emerald-400 ring-emerald-500/20',
-      rose: 'from-rose-500/20 to-red-500/10 text-rose-400 ring-rose-500/20',
+      teal: 'from-teal-500/25 to-emerald-500/10 text-teal-300 ring-teal-500/30',
+      sky: 'from-sky-500/25 to-blue-500/10 text-sky-300 ring-sky-500/30',
+      violet: 'from-violet-500/25 to-purple-500/10 text-violet-300 ring-violet-500/30',
+      amber: 'from-amber-500/25 to-orange-500/10 text-amber-300 ring-amber-500/30',
+      emerald: 'from-emerald-500/25 to-green-500/10 text-emerald-300 ring-emerald-500/30',
+      rose: 'from-rose-500/25 to-red-500/10 text-rose-300 ring-rose-500/30',
     };
     return (
-      <div className={`${ui.panel} p-4 sm:p-5 hover:border-white/[0.12] transition-all`}>
+      <div className={`${ui.panel} p-4 sm:p-5 hover:border-white/[0.15] transition-all duration-300 group`}>
         <div
-          className={`inline-flex p-2.5 rounded-xl bg-gradient-to-br ring-1 mb-3 ${colorClasses[color]}`}
+          className={`relative inline-flex p-2.5 rounded-xl bg-gradient-to-br ring-1 mb-4 ${colorClasses[color]} group-hover:scale-110 transition-transform`}
         >
-          <Icon className="w-5 h-5" />
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-current to-transparent opacity-30 blur-md" />
+          <Icon className="relative w-5 h-5" />
         </div>
-        <div className="text-2xl sm:text-3xl font-bold text-slate-50 tabular-nums">
+        <div className="text-3xl font-black text-slate-50 tabular-nums tracking-tight">
           {value}
         </div>
-        <div className="text-slate-500 text-xs sm:text-sm mt-0.5">{label}</div>
+        <div className="text-slate-500 text-xs font-semibold mt-1 uppercase tracking-wider">
+          {label}
+        </div>
       </div>
     );
   };
 
-
-  // ============= OVERVIEW =============
   const renderOverview = () => (
     <div className="space-y-6">
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           icon={UserGroupIcon}
@@ -662,54 +625,66 @@ const SuperAdminDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-        {/* Chart */}
         <div className={`${ui.panel} p-5 sm:p-6 lg:col-span-3`}>
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="text-slate-100 font-bold text-sm">
-              Exams scheduled by month
-            </h3>
-            <span className="text-xs text-slate-500">{schedules.length} total</span>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-slate-100 font-bold text-base">
+                Exams scheduled by month
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Distribution across the year
+              </p>
+            </div>
+            <span className="px-3 py-1 rounded-lg bg-teal-500/10 text-teal-300 text-xs font-bold ring-1 ring-teal-500/20">
+              {schedules.length} total
+            </span>
           </div>
-          <div className="h-44 flex items-end gap-1.5">
+          <div className="h-48 flex items-end gap-1.5">
             {monthlyActivity.map((m, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
-                <div className="w-full flex items-end h-32">
+                <div className="w-full flex items-end h-36 relative">
                   <div
-                    className="w-full bg-gradient-to-t from-teal-500/60 to-teal-400/80 group-hover:from-teal-400 group-hover:to-teal-300 rounded-t transition-all"
+                    className="w-full bg-gradient-to-t from-teal-500/70 via-teal-400/70 to-teal-300/80 group-hover:from-teal-400 group-hover:via-teal-300 group-hover:to-teal-200 rounded-t transition-all duration-300 shadow-[0_0_20px_-5px_rgba(20,184,166,0.4)] group-hover:shadow-[0_0_25px_-3px_rgba(20,184,166,0.7)]"
                     style={{ height: `${Math.max(4, m.pct)}%` }}
                     title={`${m.label}: ${m.value}`}
                   />
                 </div>
-                <span className="text-[10px] text-slate-500">{m.label}</span>
+                <span className="text-[10px] font-semibold text-slate-500 group-hover:text-slate-300 transition-colors">
+                  {m.label}
+                </span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Recent activity */}
         <div className={`${ui.panel} p-5 sm:p-6 lg:col-span-2`}>
-          <h3 className="text-slate-100 font-bold text-sm mb-4">Recent activity</h3>
-          <div className="space-y-2.5">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-slate-100 font-bold text-base">Recent activity</h3>
+            <BellIcon className="w-4 h-4 text-slate-500" />
+          </div>
+          <div className="space-y-3">
             {notifications.slice(0, 5).map((n) => (
               <div
                 key={n._id}
-                className="flex items-start gap-3 p-3 bg-white/[0.02] rounded-xl border border-white/[0.04]"
+                className="flex items-start gap-3 p-3 bg-gradient-to-r from-white/[0.04] to-transparent rounded-xl border border-white/[0.06] hover:border-white/[0.12] transition-all group"
               >
-                <div className="p-1.5 rounded-lg bg-gradient-to-br from-teal-500/20 to-emerald-500/10 text-teal-400 shrink-0 ring-1 ring-teal-500/20">
-                  <BellIcon className="w-4 h-4" />
+                <div className="p-2 rounded-lg bg-gradient-to-br from-teal-500/25 to-emerald-500/10 text-teal-300 shrink-0 ring-1 ring-teal-500/25 group-hover:scale-110 transition-transform">
+                  <BellIcon className="w-3.5 h-3.5" />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-slate-200 text-sm font-medium truncate">
+                <div className="min-w-0 flex-1">
+                  <p className="text-slate-200 text-sm font-semibold truncate">
                     {n.title}
                   </p>
-                  <p className="text-slate-500 text-xs mt-0.5">
+                  <p className="text-slate-500 text-xs mt-0.5 font-mono">
                     {new Date(n.createdAt).toLocaleDateString()}
                   </p>
                 </div>
               </div>
             ))}
             {notifications.length === 0 && (
-              <p className="text-slate-500 text-sm">No recent activity</p>
+              <p className="text-slate-500 text-sm text-center py-8">
+                No recent activity
+              </p>
             )}
           </div>
         </div>
@@ -717,8 +692,6 @@ const SuperAdminDashboard = () => {
     </div>
   );
 
-
-  // ============= USERS TAB =============
   const renderUsers = () => (
     <div>
       <SectionHeader title="All Users">
@@ -747,7 +720,6 @@ const SuperAdminDashboard = () => {
           </div>
 
           <form onSubmit={handleUserSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Basic info */}
             <div>
               <label className={ui.label}>Full Name</label>
               <input
@@ -825,7 +797,6 @@ const SuperAdminDashboard = () => {
               />
             </div>
 
-            {/* Student-specific */}
             {userFormData.role === 'student' && (
               <>
                 <div className="sm:col-span-2">
@@ -902,7 +873,6 @@ const SuperAdminDashboard = () => {
               </>
             )}
 
-            {/* Board official-specific */}
             {userFormData.role === 'board_official' && (
               <div className="sm:col-span-2">
                 <label className={ui.label}>Assigned Center</label>
@@ -944,13 +914,12 @@ const SuperAdminDashboard = () => {
         </div>
       ) : (
         <>
-          {/* Desktop table */}
           <div className={`hidden md:block ${ui.panel} overflow-hidden`}>
             <table className="w-full text-sm">
               <thead className="bg-white/[0.03] border-b border-white/[0.06]">
                 <tr>
                   <th
-                    className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide cursor-pointer hover:text-slate-200"
+                    className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest cursor-pointer hover:text-slate-200 transition"
                     onClick={() => handleSort('name')}
                   >
                     <div className="flex items-center gap-1">
@@ -963,19 +932,19 @@ const SuperAdminDashboard = () => {
                         ))}
                     </div>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                     Email
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                     Role
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                     Center / Roll
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                     Status
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-center text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                     Actions
                   </th>
                 </tr>
@@ -987,7 +956,7 @@ const SuperAdminDashboard = () => {
                     <td className="px-4 py-4 text-slate-400 text-xs">{u.email}</td>
                     <td className="px-4 py-4">
                       <span
-                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${getRoleColor(
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold ${getRoleColor(
                           u.role
                         )}`}
                       >
@@ -1016,23 +985,32 @@ const SuperAdminDashboard = () => {
                     </td>
                     <td className="px-4 py-4">
                       <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold ${
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${
                           u.isActive
-                            ? 'bg-emerald-500/10 text-emerald-300 ring-1 ring-emerald-500/20'
-                            : 'bg-rose-500/10 text-rose-300 ring-1 ring-rose-500/20'
+                            ? 'bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/25'
+                            : 'bg-rose-500/15 text-rose-300 ring-1 ring-rose-500/25'
                         }`}
                       >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            u.isActive ? 'bg-emerald-400' : 'bg-rose-400'
+                          }`}
+                        />
                         {u.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex justify-center items-center gap-1">
-                        <button onClick={() => editUser(u)} className={ui.iconBtn} title="Edit">
+                        <button
+                          onClick={() => editUser(u)}
+                          className={ui.iconBtn}
+                          title="Edit"
+                        >
                           <PencilIcon className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => toggleUserStatus(u._id, u.isActive)}
-                          className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition ${
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${
                             u.isActive
                               ? 'bg-rose-500/10 text-rose-300 hover:bg-rose-500/20'
                               : 'bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20'
@@ -1056,17 +1034,16 @@ const SuperAdminDashboard = () => {
             </table>
           </div>
 
-          {/* Mobile cards */}
           <div className="md:hidden space-y-3">
             {filteredUsers.map((u) => (
               <div key={u._id} className={`${ui.panel} p-4`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-semibold text-slate-100 truncate">{u.name}</p>
+                    <p className="font-bold text-slate-100 truncate">{u.name}</p>
                     <p className="text-slate-500 text-xs truncate">{u.email}</p>
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
                       <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-semibold ${getRoleColor(
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${getRoleColor(
                           u.role
                         )}`}
                       >
@@ -1080,10 +1057,10 @@ const SuperAdminDashboard = () => {
                     </div>
                   </div>
                   <span
-                    className={`shrink-0 px-2 py-1 rounded-lg text-[10px] font-semibold ${
+                    className={`shrink-0 px-2 py-1 rounded-lg text-[10px] font-bold ${
                       u.isActive
-                        ? 'bg-emerald-500/10 text-emerald-300'
-                        : 'bg-rose-500/10 text-rose-300'
+                        ? 'bg-emerald-500/15 text-emerald-300'
+                        : 'bg-rose-500/15 text-rose-300'
                     }`}
                   >
                     {u.isActive ? 'Active' : 'Inactive'}
@@ -1109,8 +1086,6 @@ const SuperAdminDashboard = () => {
     </div>
   );
 
-
-  // ============= CENTERS TAB =============
   const renderCenters = () => (
     <div>
       <SectionHeader title="All Exam Centers">
@@ -1286,7 +1261,6 @@ const SuperAdminDashboard = () => {
               />
             </div>
 
-            {/* ✅ Assign Board Official */}
             <div className="sm:col-span-2">
               <label className={ui.label}>Board Official (In-charge)</label>
               <select
@@ -1333,22 +1307,22 @@ const SuperAdminDashboard = () => {
             <table className="w-full text-sm">
               <thead className="bg-white/[0.03] border-b border-white/[0.06]">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                     Code
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                     Name
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                     City
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                     Official
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-center text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                     Students
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-center text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                     Actions
                   </th>
                 </tr>
@@ -1356,20 +1330,22 @@ const SuperAdminDashboard = () => {
               <tbody className="divide-y divide-white/[0.04]">
                 {filteredCenters.map((c) => (
                   <tr key={c._id} className="hover:bg-white/[0.02] transition">
-                    <td className="px-4 py-4 font-mono text-xs font-semibold text-teal-300">
+                    <td className="px-4 py-4 font-mono text-xs font-bold text-teal-300">
                       {c.centerCode}
                     </td>
                     <td className="px-4 py-4 text-slate-100 font-medium">{c.name}</td>
                     <td className="px-4 py-4 text-slate-400 text-xs">{c.city}</td>
                     <td className="px-4 py-4 text-xs">
                       {c.boardOfficial?.name ? (
-                        <span className="text-violet-300">{c.boardOfficial.name}</span>
+                        <span className="text-violet-300 font-semibold">
+                          {c.boardOfficial.name}
+                        </span>
                       ) : (
                         <span className="text-slate-600 italic">Unassigned</span>
                       )}
                     </td>
                     <td className="px-4 py-4 text-center">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-violet-500/10 text-violet-300 ring-1 ring-violet-500/20">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-violet-500/15 text-violet-300 ring-1 ring-violet-500/25">
                         {c.totalStudents || 0}
                       </span>
                     </td>
@@ -1397,10 +1373,10 @@ const SuperAdminDashboard = () => {
               <div key={c._id} className={`${ui.panel} p-4`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-mono text-xs text-teal-300 mb-0.5">
+                    <p className="font-mono text-xs text-teal-300 mb-0.5 font-bold">
                       {c.centerCode}
                     </p>
-                    <p className="font-semibold text-slate-100 truncate">{c.name}</p>
+                    <p className="font-bold text-slate-100 truncate">{c.name}</p>
                     <div className="flex items-start gap-1 mt-1.5 text-xs text-slate-500">
                       <MapPinIcon className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                       <span>{c.city}</span>
@@ -1422,7 +1398,7 @@ const SuperAdminDashboard = () => {
                   <span className="text-slate-400">
                     Official: {c.boardOfficial?.name || 'Unassigned'}
                   </span>
-                  <span className="text-violet-300 font-semibold">
+                  <span className="text-violet-300 font-bold">
                     {c.totalStudents || 0} students
                   </span>
                 </div>
@@ -1434,8 +1410,6 @@ const SuperAdminDashboard = () => {
     </div>
   );
 
-
-  // ============= SCHEDULES TAB =============
   const renderSchedules = () => (
     <div>
       <SectionHeader title="All Schedules">
@@ -1659,22 +1633,22 @@ const SuperAdminDashboard = () => {
             <table className="w-full text-sm">
               <thead className="bg-white/[0.03] border-b border-white/[0.06]">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                     Center
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                     Subject
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                     Grade
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                     Date
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                     Status
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <th className="px-4 py-3 text-center text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                     Actions
                   </th>
                 </tr>
@@ -1684,7 +1658,7 @@ const SuperAdminDashboard = () => {
                   <tr key={s._id} className="hover:bg-white/[0.02] transition">
                     <td className="px-4 py-4">
                       <div className="flex flex-col">
-                        <span className="font-mono text-xs text-teal-300">
+                        <span className="font-mono text-xs text-teal-300 font-bold">
                           {s.examCenterId?.centerCode}
                         </span>
                         <span className="text-xs text-slate-500">
@@ -1714,7 +1688,7 @@ const SuperAdminDashboard = () => {
                     </td>
                     <td className="px-4 py-4">
                       <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold capitalize ${getStatusColor(
+                        className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold capitalize ${getStatusColor(
                           s.status
                         )}`}
                       >
@@ -1745,13 +1719,13 @@ const SuperAdminDashboard = () => {
               <div key={s._id} className={`${ui.panel} p-4`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-semibold text-slate-100 truncate">{s.subject}</p>
+                    <p className="font-bold text-slate-100 truncate">{s.subject}</p>
                     <p className="text-xs text-slate-500 mt-0.5">
                       {s.examCenterId?.centerCode} · {s.examCenterId?.name}
                     </p>
                   </div>
                   <span
-                    className={`shrink-0 px-2.5 py-1 rounded-lg text-xs font-semibold capitalize ${getStatusColor(
+                    className={`shrink-0 px-2.5 py-1 rounded-lg text-xs font-bold capitalize ${getStatusColor(
                       s.status
                     )}`}
                   >
@@ -1786,8 +1760,6 @@ const SuperAdminDashboard = () => {
     </div>
   );
 
-
-  // ============= NOTIFICATIONS TAB =============
   const renderNotifications = () => (
     <div>
       <SectionHeader title="All Notifications">
@@ -1947,15 +1919,15 @@ const SuperAdminDashboard = () => {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-slate-100">{n.title}</p>
+                    <p className="font-bold text-slate-100">{n.title}</p>
                     {n.priority && (
                       <span
                         className={`px-2 py-0.5 text-[10px] font-bold rounded-md uppercase ${
                           n.priority === 'urgent'
-                            ? 'bg-rose-500/10 text-rose-300'
+                            ? 'bg-rose-500/15 text-rose-300 ring-1 ring-rose-500/25'
                             : n.priority === 'high'
-                            ? 'bg-amber-500/10 text-amber-300'
-                            : 'bg-slate-500/10 text-slate-300'
+                            ? 'bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/25'
+                            : 'bg-slate-500/15 text-slate-300 ring-1 ring-slate-500/25'
                         }`}
                       >
                         {n.priority}
@@ -2006,10 +1978,8 @@ const SuperAdminDashboard = () => {
     </div>
   );
 
-
-  // ============= NAV LIST =============
   const NavList = ({ onNavigate, collapsed }) => (
-    <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+    <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
       {menuItems.map((item) => {
         const Icon = item.icon;
         const isActive = activeTab === item.id;
@@ -2020,20 +1990,25 @@ const SuperAdminDashboard = () => {
               setActiveTab(item.id);
               onNavigate?.();
             }}
-            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all duration-200 relative text-sm font-medium group ${
+            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all duration-300 relative text-sm font-semibold group ${
               isActive
-                ? 'bg-gradient-to-r from-teal-500/15 to-emerald-500/5 text-teal-300 ring-1 ring-teal-500/20'
+                ? 'bg-gradient-to-r from-teal-500/20 via-emerald-500/10 to-transparent text-teal-200 ring-1 ring-teal-500/30 shadow-[0_0_20px_-5px_rgba(20,184,166,0.3)]'
                 : 'text-slate-400 hover:text-slate-100 hover:bg-white/[0.04]'
             }`}
+            title={collapsed ? item.label : undefined}
           >
             {isActive && (
-              <span className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-teal-400 to-emerald-400" />
+              <span className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-teal-400 to-emerald-400 shadow-[0_0_10px_rgba(20,184,166,0.8)]" />
             )}
-            <Icon
-              className={`w-5 h-5 flex-shrink-0 ${
-                isActive ? 'text-teal-300' : 'text-slate-500 group-hover:text-slate-300'
+            <div
+              className={`p-1.5 rounded-lg transition-all duration-300 ${
+                isActive
+                  ? 'bg-teal-500/20 text-teal-300'
+                  : 'bg-white/[0.03] text-slate-500 group-hover:text-slate-300'
               }`}
-            />
+            >
+              <Icon className="w-4 h-4 flex-shrink-0" />
+            </div>
             {!collapsed && <span className="truncate">{item.label}</span>}
           </button>
         );
@@ -2041,22 +2016,19 @@ const SuperAdminDashboard = () => {
     </nav>
   );
 
-
-  // ============= RENDER =============
   return (
     <div className={`flex h-screen ${ui.page}`}>
-      {/* ============ MOBILE DRAWER ============ */}
       {mobileSidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/80 backdrop-blur-md"
             onClick={() => setMobileSidebarOpen(false)}
           />
-          <aside className="absolute left-0 top-0 bottom-0 w-72 max-w-[85vw] bg-[#0D1119] border-r border-white/[0.06] flex flex-col">
+          <aside className="absolute left-0 top-0 bottom-0 w-72 max-w-[85vw] bg-gradient-to-b from-[#0D1119] to-[#0A0D16] border-r border-white/[0.06] flex flex-col animate-in slide-in-from-left duration-300">
             <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-gradient-to-br from-teal-500/20 to-emerald-500/10 rounded-xl ring-1 ring-teal-500/20">
-                  <ShieldCheckIcon className="w-5 h-5 text-teal-400" />
+                <div className="p-2 bg-gradient-to-br from-teal-500/25 to-emerald-500/10 rounded-xl ring-1 ring-teal-500/30">
+                  <ShieldCheckIcon className="w-5 h-5 text-teal-300" />
                 </div>
                 <span className="text-slate-100 font-bold">Super Admin</span>
               </div>
@@ -2070,7 +2042,7 @@ const SuperAdminDashboard = () => {
             <NavList onNavigate={() => setMobileSidebarOpen(false)} />
             <div className="p-3 border-t border-white/[0.06]">
               <div className="flex items-center gap-3 p-2">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-500/30 to-emerald-500/20 flex items-center justify-center text-teal-200 font-bold text-sm ring-1 ring-teal-500/20">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-500/40 to-emerald-500/25 flex items-center justify-center text-teal-100 font-bold text-sm ring-1 ring-teal-500/30">
                   {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -2093,15 +2065,17 @@ const SuperAdminDashboard = () => {
         </div>
       )}
 
-      {/* ============ DESKTOP SIDEBAR ============ */}
       <aside
         className={`${
           sidebarOpen ? 'w-64' : 'w-20'
-        } hidden lg:flex bg-[#0D1119] border-r border-white/[0.06] transition-all duration-300 flex-col shrink-0`}
+        } hidden lg:flex bg-gradient-to-b from-[#0D1119] to-[#0A0D16] border-r border-white/[0.06] transition-all duration-300 flex-col shrink-0`}
       >
         <div className="p-5 border-b border-white/[0.06] flex items-center gap-3">
-          <div className="p-2.5 bg-gradient-to-br from-teal-500/20 to-emerald-500/10 rounded-xl shrink-0 ring-1 ring-teal-500/20">
-            <ShieldCheckIcon className="w-5 h-5 text-teal-400" />
+          <div className="relative shrink-0">
+            <div className="absolute inset-0 bg-gradient-to-br from-teal-500/40 to-emerald-500/20 rounded-xl blur-lg" />
+            <div className="relative p-2.5 bg-gradient-to-br from-teal-500/25 to-emerald-500/10 rounded-xl ring-1 ring-teal-500/30">
+              <ShieldCheckIcon className="w-5 h-5 text-teal-300" />
+            </div>
           </div>
           {sidebarOpen && (
             <div className="min-w-0">
@@ -2123,7 +2097,7 @@ const SuperAdminDashboard = () => {
               !sidebarOpen ? 'justify-center' : ''
             }`}
           >
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-500/30 to-emerald-500/20 flex items-center justify-center text-teal-200 font-bold text-sm shrink-0 ring-1 ring-teal-500/20">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-500/40 to-emerald-500/25 flex items-center justify-center text-teal-100 font-bold text-sm shrink-0 ring-1 ring-teal-500/30">
               {user?.name?.charAt(0)?.toUpperCase() || 'U'}
             </div>
             {sidebarOpen && (
@@ -2149,10 +2123,8 @@ const SuperAdminDashboard = () => {
         </div>
       </aside>
 
-      {/* ============ MAIN ============ */}
       <main className="flex-1 overflow-y-auto min-w-0">
-        {/* Header */}
-        <header className="bg-[#0A0D14]/80 backdrop-blur-xl border-b border-white/[0.06] sticky top-0 z-30 px-4 sm:px-6 py-4">
+        <header className="bg-[#080A11]/80 backdrop-blur-xl border-b border-white/[0.06] sticky top-0 z-30 px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <button
@@ -2173,6 +2145,9 @@ const SuperAdminDashboard = () => {
                   {menuItems.find((item) => item.id === activeTab)?.label ||
                     'Dashboard'}
                 </h1>
+                <p className="text-xs text-slate-500 truncate hidden sm:block">
+                  {menuItems.find((item) => item.id === activeTab)?.hint || ''}
+                </p>
               </div>
             </div>
 
@@ -2186,8 +2161,8 @@ const SuperAdminDashboard = () => {
                   className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`}
                 />
               </button>
-              <div className="hidden md:flex items-center gap-2.5 bg-white/[0.03] pl-1.5 pr-4 py-1.5 rounded-full border border-white/[0.06]">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500/30 to-emerald-500/20 flex items-center justify-center text-teal-200 font-bold text-xs ring-1 ring-teal-500/20">
+              <div className="hidden md:flex items-center gap-2.5 bg-gradient-to-r from-white/[0.05] to-white/[0.02] pl-1.5 pr-4 py-1.5 rounded-full border border-white/[0.06]">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500/40 to-emerald-500/25 flex items-center justify-center text-teal-100 font-bold text-xs ring-1 ring-teal-500/30">
                   {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
                 <div>
