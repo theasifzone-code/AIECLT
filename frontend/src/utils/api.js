@@ -1,32 +1,34 @@
-
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const IS_DEV = import.meta.env.DEV;
 
-// ==================== CREATE AXIOS INSTANCE ====================
+// AXIOS INSTANCE
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 30000, 
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
   },
-  withCredentials: true, 
+  withCredentials: true,
 });
 
-// ==================== REQUEST INTERCEPTOR ====================
+// REQUEST INTERCEPTOR
 api.interceptors.request.use(
   (config) => {
-    // Add token to headers
+    // Token attach
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // Log request in development
-    if (import.meta.env.DEV) {
-      console.log(`${config.method?.toUpperCase()} ${config.url}`, config.data || '');
+    // Dev logging 
+    if (IS_DEV) {
+      const method = config.method?.toUpperCase();
+      const url = config.url;
+      console.log(`${method} ${url}`, config.data || '');
     }
 
     return config;
@@ -37,149 +39,153 @@ api.interceptors.request.use(
   }
 );
 
-// ==================== RESPONSE INTERCEPTOR ====================
+
+//  RESPONSE INTERCEPTOR
 api.interceptors.response.use(
   (response) => {
-    if (import.meta.env.DEV) {
-      console.log(`${response.config.method?.toUpperCase()} ${response.config.url}`, response.data);
+    if (IS_DEV) {
+      const method = response.config.method?.toUpperCase();
+      const url = response.config.url;
+      console.log(`📥 ${method} ${url}`, response.data);
     }
     return response;
   },
   async (error) => {
-    const originalRequest = error.config;
+    const originalRequest = error.config || {};
+    const status = error.response?.status;
+    const currentPath = window.location.pathname;
+    const isPublicPath =
+      currentPath.includes('/login') ||
+      currentPath.includes('/register') ||
+      currentPath.includes('/forgot-password') ||
+      currentPath.includes('/reset-password') ||
+      currentPath.includes('/verify-email');
 
-    // ==================== UNAUTHORIZED (401) ====================
-    if (error.response?.status === 401) {
-      // Prevent infinite loop
+    if (status === 401) {
       if (originalRequest._retry) {
         return Promise.reject(error);
       }
+      originalRequest._retry = true;
+      if (!isPublicPath) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        if (!window._sessionExpiredToastShown) {
+          window._sessionExpiredToastShown = true;
+          toast.error('Session expired. Please login again.');
 
-      // Clear auth data
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      
-      // Show toast notification
-      toast.error('Session expired. Please login again.');
-      
-      // Redirect to login
-      if (!window.location.pathname.includes('/login')) {
+          setTimeout(() => {
+            window._sessionExpiredToastShown = false;
+          }, 3000);
+        }
+
         window.location.href = '/login';
       }
+
+      return Promise.reject(error);
     }
 
-    // ==================== FORBIDDEN (403) ====================
-    if (error.response?.status === 403) {
-      toast.error(error.response?.data?.message || 'You do not have permission to perform this action.');
+    //  403 FORBIDDEN
+    if (status === 403) {
+      const message =
+        error.response?.data?.message ||
+        'You do not have permission to perform this action.';
+      toast.error(message);
     }
 
-    // ==================== NOT FOUND (404) ====================
-    if (error.response?.status === 404) {
-      toast.error(error.response?.data?.message || 'Resource not found.');
+    //  404 NOT FOUND
+    if (status === 404) {
+      const message = error.response?.data?.message || 'Resource not found.';
+      toast.error(message);
     }
 
-    // ==================== SERVER ERROR (500) ====================
-    if (error.response?.status >= 500) {
-      toast.error('Server error. Please try again later.');
+    if (status === 429) {
+      toast.error(
+        error.response?.data?.message ||
+        'Too many requests. Please slow down.'
+      );
     }
 
-    // ==================== NETWORK ERROR ====================
-    if (error.code === 'ECONNABORTED' || error.message === 'Network Error') {
+    if (status >= 500) {
+      toast.error(
+        error.response?.data?.message ||
+        'Server error. Please try again later.'
+      );
+    }
+
+    if (error.code === 'ECONNABORTED') {
+      toast.error('Request timeout. Please check your connection.');
+    }
+
+    if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
       toast.error('Network error. Please check your internet connection.');
     }
 
-    // ==================== LOG ERROR ====================
-    console.error('❌ API Error:', {
-      url: error.config?.url,
-      method: error.config?.method?.toUpperCase(),
-      status: error.response?.status,
-      message: error.response?.data?.message || error.message,
-      data: error.response?.data,
-    });
-
-    // ==================== RETURN ERROR WITH USER-FRIENDLY MESSAGE ====================
-    const errorMessage = error.response?.data?.message || error.message || 'An unexpected error occurred.';
+    if (IS_DEV) {
+      console.error('API Error:', {
+        url: error.config?.url,
+        method: error.config?.method?.toUpperCase(),
+        status,
+        message: error.response?.data?.message || error.message,
+        data: error.response?.data,
+      });
+    }
+    const errorMessage =
+      error.response?.data?.message ||
+      error.message ||
+      'An unexpected error occurred.';
     error.userMessage = errorMessage;
-    
+
     return Promise.reject(error);
   }
 );
 
-// ==================== HELPER METHODS ====================
-
-/**
- * GET request with error handling
- * @param {string} url - Endpoint URL
- * @param {Object} params - Query parameters
- * @returns {Promise} - Axios response
- */
 api.getWithParams = async (url, params = {}) => {
-  try {
-    const response = await api.get(url, { params });
-    return response;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.get(url, { params });
+  return response;
 };
-
 
 api.postWithData = async (url, data = {}) => {
-  try {
-    const response = await api.post(url, data);
-    return response;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.post(url, data);
+  return response;
 };
-
 
 api.putWithData = async (url, data = {}) => {
-  try {
-    const response = await api.put(url, data);
-    return response;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.put(url, data);
+  return response;
 };
 
+api.patchWithData = async (url, data = {}) => {
+  const response = await api.patch(url, data);
+  return response;
+};
 
 api.deleteWithData = async (url) => {
-  try {
-    const response = await api.delete(url);
-    return response;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.delete(url);
+  return response;
 };
 
-
 api.uploadFile = async (url, formData, onProgress = null) => {
-  try {
-    const token = localStorage.getItem('token');
-    const response = await axios.post(`${API_URL}${url}`, formData, {
-      headers: {
-
-        'Authorization': token ? `Bearer ${token}` : '',
-        'Content-Type': undefined, 
-      },
-      onUploadProgress: (progressEvent) => {
-        if (onProgress) {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          onProgress(percentCompleted);
-        }
-      },
-    });
-    return response;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.post(url, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    timeout: 120000,
+    onUploadProgress: (progressEvent) => {
+      if (onProgress && progressEvent.total) {
+        const percentCompleted = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total
+        );
+        onProgress(percentCompleted);
+      }
+    },
+  });
+  return response;
 };
 
 
 api.isAuthenticated = () => {
   return !!localStorage.getItem('token');
 };
-
 
 api.getCurrentUser = () => {
   try {
@@ -189,7 +195,6 @@ api.getCurrentUser = () => {
     return null;
   }
 };
-
 
 api.setAuthToken = (token) => {
   if (token) {
@@ -201,12 +206,49 @@ api.setAuthToken = (token) => {
   }
 };
 
-
 api.clearAuth = () => {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
   delete api.defaults.headers.common['Authorization'];
 };
 
-// ==================== EXPORT ====================
+api.extractCenterFromImage = async (file, onProgress) => {
+  const formData = new FormData();
+  formData.append('image', file);
+  return api.uploadFile('/ocr/extract-center', formData, onProgress);
+};
+
+
+api.searchCenterByCode = async (centerCode) => {
+  return api.postWithData('/ocr/manual-center', { centerCode });
+};
+
+api.getCenters = async (filters = {}) => {
+  return api.getWithParams('/ocr/centers', filters);
+};
+
+api.getCities = async () => {
+  return api.get('/ocr/cities');
+};
+
+api.getRouteToCenter = async (originLat, originLng, centerId) => {
+  return api.postWithData('/route/to-center', {
+    originLat,
+    originLng,
+    centerId,
+  });
+};
+
+api.getMyNotifications = async (page = 1, limit = 20) => {
+  return api.getWithParams('/notifications/my', { page, limit });
+};
+
+api.getUnreadCount = async () => {
+  return api.get('/notifications/unread-count');
+};
+api.getStudentSchedules = async () => {
+  return api.get('/schedules/student');
+};
+
+
 export default api;

@@ -1,4 +1,3 @@
-
 const mongoose = require('mongoose');
 
 const NotificationSchema = new mongoose.Schema(
@@ -17,16 +16,35 @@ const NotificationSchema = new mongoose.Schema(
       minlength: [5, 'Message must be at least 5 characters'],
       maxlength: [5000, 'Message cannot exceed 5000 characters'],
     },
+
     sentBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
+    targetCenter: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ExamCenter',
+      default: null,
+    },
+    relatedSchedule: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Schedule',
+      default: null,
+    },
+
     targetRole: {
       type: String,
       enum: ['all', 'students', 'board_official', 'admin'],
       default: 'all',
     },
+
+    targetGrade: {
+      type: String,
+      enum: ['9', '10', '11', '12', 'other', null],
+      default: null,
+    },
+
     targetUsers: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -35,9 +53,17 @@ const NotificationSchema = new mongoose.Schema(
     ],
     type: {
       type: String,
-      enum: ['general', 'exam_update', 'schedule_reminder', 'result_announcement', 'system_alert'],
+      enum: [
+        'general',
+        'exam_update',
+        'schedule_reminder',
+        'result_announcement',
+        'system_alert',
+        'center_update',
+      ],
       default: 'general',
     },
+
     priority: {
       type: String,
       enum: ['low', 'medium', 'high', 'urgent'],
@@ -47,6 +73,7 @@ const NotificationSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
     readBy: [
       {
         userId: {
@@ -59,14 +86,17 @@ const NotificationSchema = new mongoose.Schema(
         },
       },
     ],
+
     readCount: {
       type: Number,
       default: 0,
     },
+
     totalRecipients: {
       type: Number,
       default: 0,
     },
+
     deliveredCount: {
       type: Number,
       default: 0,
@@ -74,21 +104,25 @@ const NotificationSchema = new mongoose.Schema(
     expiryDate: {
       type: Date,
     },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-    isDeleted: {
-      type: Boolean,
-      default: false,
-    },
+
     scheduledAt: {
       type: Date,
       default: null,
     },
+
     sentAt: {
       type: Date,
       default: null,
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
+    isDeleted: {
+      type: Boolean,
+      default: false,
     },
     metadata: {
       source: {
@@ -108,6 +142,7 @@ const NotificationSchema = new mongoose.Schema(
         default: {},
       },
     },
+
     deletedAt: {
       type: Date,
       default: null,
@@ -120,7 +155,6 @@ const NotificationSchema = new mongoose.Schema(
   }
 );
 
-
 NotificationSchema.index({ sentBy: 1 });
 NotificationSchema.index({ targetRole: 1 });
 NotificationSchema.index({ isRead: 1 });
@@ -131,8 +165,10 @@ NotificationSchema.index({ deletedAt: 1 });
 NotificationSchema.index({ 'readBy.userId': 1 });
 NotificationSchema.index({ type: 1, priority: 1 });
 NotificationSchema.index({ createdAt: -1, targetRole: 1 });
-
-// ==================== VIRTUAL FIELDS ====================
+NotificationSchema.index({ targetCenter: 1, createdAt: -1 });
+NotificationSchema.index({ targetGrade: 1 });
+NotificationSchema.index({ relatedSchedule: 1 });
+NotificationSchema.index({ targetCenter: 1, targetRole: 1, isActive: 1 });
 NotificationSchema.virtual('isExpired').get(function () {
   return this.expiryDate && new Date(this.expiryDate) < new Date();
 });
@@ -145,27 +181,40 @@ NotificationSchema.virtual('isDelivered').get(function () {
   return this.sentAt !== null;
 });
 
+NotificationSchema.virtual('centerInfo', {
+  ref: 'ExamCenter',
+  localField: 'targetCenter',
+  foreignField: '_id',
+  justOne: true,
+});
+
+NotificationSchema.virtual('senderInfo', {
+  ref: 'User',
+  localField: 'sentBy',
+  foreignField: '_id',
+  justOne: true,
+});
+
 
 NotificationSchema.pre('save', async function () {
   if (this.title) this.title = this.title.trim();
   if (this.message) this.message = this.message.trim();
 
-  if (!this.scheduledAt) {
+  if (!this.scheduledAt && !this.sentAt) {
     this.sentAt = new Date();
   }
 
   if (!this.targetUsers) {
     this.targetUsers = [];
   }
-
 });
-
-
 
 NotificationSchema.methods.markAsRead = async function (userId) {
   if (this.isRead) return true;
 
-  const alreadyRead = this.readBy.some((r) => r.userId.toString() === userId.toString());
+  const alreadyRead = this.readBy.some(
+    (r) => r.userId.toString() === userId.toString()
+  );
   if (alreadyRead) return true;
 
   this.readBy.push({
@@ -201,15 +250,147 @@ NotificationSchema.methods.restore = async function () {
   await this.save();
 };
 
+NotificationSchema.methods.isForUser = function (user) {
+  if (this.targetUsers?.length > 0) {
+    return this.targetUsers.some((id) => id.toString() === user._id.toString());
+  }
 
-NotificationSchema.statics.countUnreadForUser = async function (userId) {
-  return this.countDocuments({
+  const roleMatch =
+    this.targetRole === 'all' ||
+    (this.targetRole === 'students' && user.role === 'student') ||
+    (this.targetRole === 'board_official' && user.role === 'board_official') ||
+    (this.targetRole === 'admin' && user.role === 'admin');
+
+  if (!roleMatch) return false;
+
+  if (this.targetCenter) {
+    const userCenter =
+      user.role === 'student' ? user.examCenter : user.assignedCenter;
+    if (!userCenter || userCenter.toString() !== this.targetCenter.toString()) {
+      return false;
+    }
+  }
+
+  if (this.targetGrade && user.role === 'student') {
+    if (user.grade !== this.targetGrade) return false;
+  }
+
+  return true;
+};
+
+NotificationSchema.statics.countUnreadForUser = async function (user) {
+  const filter = {
     isActive: true,
     isDeleted: false,
     sentAt: { $ne: null },
-    $or: [{ targetRole: 'all' }, { targetUsers: userId }],
-    readBy: { $not: { $elemMatch: { userId } } },
-  });
+    readBy: { $not: { $elemMatch: { userId: user._id } } },
+    $or: [
+      { targetUsers: user._id },
+      { targetUsers: { $size: 0 }, targetCenter: null, targetRole: 'all' },
+      {
+        targetUsers: { $size: 0 },
+        targetCenter: null,
+        targetRole:
+          user.role === 'student'
+            ? 'students'
+            : user.role === 'board_official'
+              ? 'board_official'
+              : 'admin',
+      },
+    ],
+  };
+
+  const userCenter =
+    user.role === 'student' ? user.examCenter : user.assignedCenter;
+
+  if (userCenter) {
+    filter.$or.push({
+      targetUsers: { $size: 0 },
+      targetCenter: userCenter,
+      targetRole:
+        user.role === 'student'
+          ? 'students'
+          : user.role === 'board_official'
+            ? 'board_official'
+            : 'admin',
+    });
+  }
+
+  return this.countDocuments(filter);
+};
+
+NotificationSchema.statics.getForUser = function (user, options = {}) {
+  const filter = {
+    isActive: true,
+    isDeleted: false,
+    sentAt: { $ne: null },
+    $or: [
+      { targetUsers: user._id },
+      { targetUsers: { $size: 0 }, targetCenter: null, targetRole: 'all' },
+      {
+        targetUsers: { $size: 0 },
+        targetCenter: null,
+        targetRole:
+          user.role === 'student'
+            ? 'students'
+            : user.role === 'board_official'
+              ? 'board_official'
+              : 'admin',
+      },
+    ],
+  };
+
+  const userCenter =
+    user.role === 'student' ? user.examCenter : user.assignedCenter;
+
+  if (userCenter) {
+    filter.$or.push({
+      targetUsers: { $size: 0 },
+      targetCenter: userCenter,
+      targetRole:
+        user.role === 'student'
+          ? 'students'
+          : user.role === 'board_official'
+            ? 'board_official'
+            : 'admin',
+    });
+  }
+
+  let query = this.find(filter)
+    .populate('sentBy', 'name email role')
+    .populate('targetCenter', 'name centerCode city')
+    .sort({ createdAt: -1 });
+
+  if (options.limit) query = query.limit(options.limit);
+  if (options.skip) query = query.skip(options.skip);
+
+  return query;
+};
+
+NotificationSchema.statics.getByCenter = function (centerId, options = {}) {
+  const filter = {
+    targetCenter: centerId,
+    isActive: true,
+    isDeleted: false,
+  };
+
+  if (options.targetRole) filter.targetRole = options.targetRole;
+  if (options.type) filter.type = options.type;
+
+  return this.find(filter)
+    .populate('sentBy', 'name email role')
+    .sort({ createdAt: -1 })
+    .limit(options.limit || 50);
+};
+
+NotificationSchema.statics.getSentBy = function (userId, options = {}) {
+  return this.find({
+    sentBy: userId,
+    isDeleted: false,
+  })
+    .populate('targetCenter', 'name centerCode city')
+    .sort({ createdAt: -1 })
+    .limit(options.limit || 50);
 };
 
 NotificationSchema.statics.getStats = async function () {
@@ -228,6 +409,5 @@ NotificationSchema.statics.getStats = async function () {
     readRate: total > 0 ? Math.round((read / total) * 100) : 0,
   };
 };
-
 
 module.exports = mongoose.model('Notification', NotificationSchema);

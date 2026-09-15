@@ -1,4 +1,3 @@
-
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
@@ -34,16 +33,94 @@ const UserSchema = new mongoose.Schema(
       enum: ['student', 'board_official', 'admin'],
       default: 'student',
     },
+
+    examCenter: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ExamCenter',
+      default: null,
+    },
+
+    assignedCenter: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ExamCenter',
+      default: null,
+    },
+    rollNumber: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      default: null,
+    },
+
+    registrationNumber: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      default: null,
+    },
+
+    grade: {
+      type: String,
+      enum: ['9', '10', '11', '12', 'other', null],
+      default: null,
+    },
+
+    board: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+
+    city: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+
+    dateOfBirth: {
+      type: Date,
+      default: null,
+    },
+
     country: {
       type: String,
       default: 'Pakistan',
       trim: true,
     },
-    registeredSchedules: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Schedule',
-      default: [],
-    }],
+
+    phone: {
+      type: String,
+      trim: true,
+      match: [/^\+?[0-9]{10,15}$/, 'Please add a valid phone number'],
+      default: '',
+    },
+
+    address: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    registeredSchedules: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Schedule',
+      },
+    ],
+
+    profileImage: {
+      type: String,
+      default: null,
+    },
+
+    preferences: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {
+        theme: 'dark',
+        notifications: true,
+        language: 'en',
+      },
+    },
+
     isActive: {
       type: Boolean,
       default: true,
@@ -52,6 +129,11 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isApproved: {
+      type: Boolean,
+      default: false,
+    },
+
     lastLogin: {
       type: Date,
     },
@@ -68,28 +150,26 @@ const UserSchema = new mongoose.Schema(
     resetPasswordExpire: {
       type: Date,
     },
-    phone: {
+
+    emailVerificationToken: {
       type: String,
-      trim: true,
-      match: [/^\+?[0-9]{10,15}$/, 'Please add a valid phone number'],
+      select: false,
     },
-    profileImage: {
-      type: String,
-      default: null,
-    },
-    preferences: {
-      type: mongoose.Schema.Types.Mixed,
-      default: {
-        theme: 'dark',
-        notifications: true,
-        language: 'en',
-      },
+    emailVerificationExpire: {
+      type: Date,
+      select: false,
     },
     metadata: {
       ipAddress: String,
       userAgent: String,
       lastActive: Date,
     },
+
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+
     deletedAt: {
       type: Date,
       default: null,
@@ -102,13 +182,26 @@ const UserSchema = new mongoose.Schema(
   }
 );
 
-
-// UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1 });
 UserSchema.index({ isActive: 1 });
 UserSchema.index({ deletedAt: 1 });
-UserSchema.index({ registeredSchedules: 1 }); 
-
+UserSchema.index({ registeredSchedules: 1 });
+UserSchema.index({ examCenter: 1 });
+UserSchema.index({ assignedCenter: 1 });
+UserSchema.index({ city: 1 });
+UserSchema.index({ grade: 1 });
+UserSchema.index({ role: 1, examCenter: 1, isActive: 1 });
+UserSchema.index(
+  { examCenter: 1, rollNumber: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      role: 'student',
+      rollNumber: { $type: 'string' },
+      examCenter: { $type: 'objectId' },
+    },
+  }
+);
 
 UserSchema.virtual('isLocked').get(function () {
   return this.lockUntil && this.lockUntil > Date.now();
@@ -118,22 +211,31 @@ UserSchema.virtual('isDeleted').get(function () {
   return this.deletedAt !== null;
 });
 
+UserSchema.virtual('centerInfo', {
+  ref: 'ExamCenter',
+  localField: 'examCenter',
+  foreignField: '_id',
+  justOne: true,
+});
+
+UserSchema.virtual('assignedCenterInfo', {
+  ref: 'ExamCenter',
+  localField: 'assignedCenter',
+  foreignField: '_id',
+  justOne: true,
+});
 
 UserSchema.pre('save', async function () {
-  if (!this.isModified('password')) {
-    return;
-  }
+  if (!this.isModified('password')) return;
 
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
   } catch (error) {
-    console.error(' Password hashing error:', error);
+    console.error('Password hashing error:', error);
     throw error;
   }
 });
-
-
 
 UserSchema.methods.comparePassword = async function (enteredPassword) {
   try {
@@ -188,14 +290,36 @@ UserSchema.methods.restore = async function () {
   await this.save();
 };
 
-
 UserSchema.methods.isRegisteredForSchedule = function (scheduleId) {
-  return this.registeredSchedules && 
-         this.registeredSchedules.some(id => id.toString() === scheduleId.toString());
+  return (
+    this.registeredSchedules &&
+    this.registeredSchedules.some((id) => id.toString() === scheduleId.toString())
+  );
 };
 
+UserSchema.methods.isLinkedToCenter = function () {
+  if (this.role === 'student') return !!this.examCenter;
+  if (this.role === 'board_official') return !!this.assignedCenter;
+  return true;
+};
 
+UserSchema.methods.registerForSchedule = async function (scheduleId) {
+  if (this.isRegisteredForSchedule(scheduleId)) {
+    throw new Error('Already registered for this schedule');
+  }
+  this.registeredSchedules.push(scheduleId);
+  await this.save();
+  return this;
+};
 
+UserSchema.methods.unregisterFromSchedule = async function (scheduleId) {
+  const idStr = scheduleId.toString();
+  this.registeredSchedules = this.registeredSchedules.filter(
+    (id) => id.toString() !== idStr
+  );
+  await this.save();
+  return this;
+};
 UserSchema.statics.findByEmail = function (email, includePassword = false) {
   const query = this.findOne({ email: email.toLowerCase() });
   if (includePassword) {
@@ -216,9 +340,47 @@ UserSchema.statics.findByRegisteredSchedule = function (scheduleId) {
   return this.find({
     registeredSchedules: scheduleId,
     isActive: true,
-    deletedAt: null
+    deletedAt: null,
   });
 };
 
+UserSchema.statics.findStudentsByCenter = function (centerId) {
+  return this.find({
+    role: 'student',
+    examCenter: centerId,
+    isActive: true,
+    deletedAt: null,
+  }).sort({ rollNumber: 1 });
+};
+
+UserSchema.statics.findBoardOfficialByCenter = function (centerId) {
+  return this.findOne({
+    role: 'board_official',
+    assignedCenter: centerId,
+    isActive: true,
+    deletedAt: null,
+  });
+};
+
+UserSchema.statics.countStudentsByCenter = function (centerId) {
+  return this.countDocuments({
+    role: 'student',
+    examCenter: centerId,
+    isActive: true,
+    deletedAt: null,
+  });
+};
+
+UserSchema.statics.searchStudents = function (query, centerId = null) {
+  const regex = new RegExp(query, 'i');
+  const filter = {
+    role: 'student',
+    isActive: true,
+    deletedAt: null,
+    $or: [{ name: regex }, { email: regex }, { rollNumber: regex }],
+  };
+  if (centerId) filter.examCenter = centerId;
+  return this.find(filter).limit(20);
+};
 
 module.exports = mongoose.model('User', UserSchema);

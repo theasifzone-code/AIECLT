@@ -1,9 +1,11 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
+const ExamCenter = require('../models/ExamCenter');
 const { sendEmail } = require('../utils/email');
 const { AppError, catchAsync } = require('../utils/errorUtils');
 const logger = require('../utils/logger');
+
 
 
 const generateToken = (id, role) => {
@@ -18,20 +20,53 @@ const generateToken = (id, role) => {
   );
 };
 
-const sendTokenResponse = (user, statusCode, res) => {
-  const token = generateToken(user._id, user.role);
 
-  // Remove password from response
-  const userResponse = {
+
+const buildUserResponse = (user) => {
+  const response = {
+    _id: user._id,
     id: user._id,
     name: user.name,
     email: user.email,
     role: user.role,
     country: user.country,
+    phone: user.phone,
     isActive: user.isActive,
     isEmailVerified: user.isEmailVerified,
+    isApproved: user.isApproved,
     profileImage: user.profileImage,
+    city: user.city,
+    preferences: user.preferences,
+    lastLogin: user.lastLogin,
+    createdAt: user.createdAt,
   };
+
+  if (user.role === 'student') {
+    response.examCenter = user.examCenter;
+    response.rollNumber = user.rollNumber;
+    response.registrationNumber = user.registrationNumber;
+    response.grade = user.grade;
+    response.board = user.board;
+    response.dateOfBirth = user.dateOfBirth;
+    response.registeredSchedules = user.registeredSchedules;
+  }
+
+  if (user.role === 'board_official') {
+    response.assignedCenter = user.assignedCenter;
+  }
+
+  if (user.examCenter && typeof user.examCenter === 'object' && user.examCenter.name) {
+    response.centerInfo = user.examCenter;
+  }
+
+  return response;
+};
+
+
+
+const sendTokenResponse = (user, statusCode, res) => {
+  const token = generateToken(user._id, user.role);
+  const userResponse = buildUserResponse(user);
 
   const cookieOptions = {
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -50,16 +85,46 @@ const sendTokenResponse = (user, statusCode, res) => {
 };
 
 
-const register = catchAsync(async (req, res) => {
-  const { name, email, password, role, country, phone } = req.body;
 
-  // Check if user exists
+const register = catchAsync(async (req, res) => {
+  const {
+    name,
+    email,
+    password,
+    role,
+    country,
+    phone,
+    city,
+    examCenter,
+    rollNumber,
+    grade,
+    board,
+    dateOfBirth,
+  } = req.body;
+
   const existingUser = await User.findOne({ email: email.toLowerCase() });
   if (existingUser) {
     throw new AppError('User already exists with this email', 400);
   }
 
-  // Create user
+  if (role === 'student' && examCenter) {
+    const centerExists = await ExamCenter.findById(examCenter);
+    if (!centerExists) {
+      throw new AppError('Exam center not found', 404);
+    }
+  }
+
+  if (role === 'student' && examCenter && rollNumber) {
+    const duplicate = await User.findOne({
+      role: 'student',
+      examCenter,
+      rollNumber: rollNumber.toUpperCase(),
+    });
+    if (duplicate) {
+      throw new AppError('This roll number is already registered at this center', 400);
+    }
+  }
+
   const user = await User.create({
     name,
     email: email.toLowerCase(),
@@ -67,9 +132,24 @@ const register = catchAsync(async (req, res) => {
     role: role || 'student',
     country: country || 'Pakistan',
     phone: phone || '',
+    city: city || '',
     isEmailVerified: false,
+    ...(role === 'student' && {
+      examCenter: examCenter || null,
+      rollNumber: rollNumber ? rollNumber.toUpperCase() : null,
+      grade: grade || null,
+      board: board || '',
+      dateOfBirth: dateOfBirth || null,
+    }),
   });
 
+  if (role === 'student' && examCenter) {
+    await ExamCenter.findByIdAndUpdate(examCenter, {
+      $inc: { totalStudents: 1 },
+    });
+  }
+
+  // Send welcome email
   try {
     await sendEmail({
       email: user.email,
@@ -88,16 +168,25 @@ const register = catchAsync(async (req, res) => {
 
   logger.info(`User registered: ${user.email} (${user.role})`);
 
+  if (user.examCenter) {
+    await user.populate('examCenter', 'name centerCode city address latitude longitude');
+  }
+
   sendTokenResponse(user, 201, res);
 });
 
 
 const login = catchAsync(async (req, res) => {
   const { email, password } = req.body;
+
   if (!email || !password) {
     throw new AppError('Please provide email and password', 400);
   }
-  const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+
+  const user = await User.findOne({ email: email.toLowerCase() })
+    .select('+password')
+    .populate('examCenter', 'name centerCode city address latitude longitude')
+    .populate('assignedCenter', 'name centerCode city address latitude longitude');
 
   if (!user) {
     throw new AppError('Invalid credentials', 401);
@@ -109,6 +198,7 @@ const login = catchAsync(async (req, res) => {
       401
     );
   }
+
   if (!user.isActive) {
     throw new AppError('Account is deactivated. Please contact admin.', 401);
   }
@@ -116,6 +206,7 @@ const login = catchAsync(async (req, res) => {
   if (user.isDeleted) {
     throw new AppError('Account has been deleted. Please contact admin.', 401);
   }
+
   const isMatch = await user.comparePassword(password);
 
   if (!isMatch) {
@@ -140,9 +231,13 @@ const login = catchAsync(async (req, res) => {
 });
 
 
+
 const getMe = catchAsync(async (req, res) => {
   const user = await User.findById(req.user.id)
-    .select('-password -resetPasswordToken -resetPasswordExpire');
+    .select('-password -resetPasswordToken -resetPasswordExpire')
+    .populate('examCenter', 'name centerCode city address latitude longitude capacity')
+    .populate('assignedCenter', 'name centerCode city address latitude longitude')
+    .populate('registeredSchedules', 'subject examDate examTime status');
 
   if (!user) {
     throw new AppError('User not found', 404);
@@ -150,28 +245,45 @@ const getMe = catchAsync(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    user,
+    user: buildUserResponse(user),
   });
 });
 
 
+
 const updateProfile = catchAsync(async (req, res) => {
-  const { name, country, phone, preferences } = req.body;
+  const {
+    name,
+    country,
+    phone,
+    city,
+    preferences,
+    grade,
+    board,
+    dateOfBirth,
+    rollNumber,
+    registrationNumber,
+  } = req.body;
 
   const updateData = {};
   if (name) updateData.name = name;
   if (country) updateData.country = country;
   if (phone) updateData.phone = phone;
+  if (city) updateData.city = city;
   if (preferences) updateData.preferences = preferences;
+  if (grade) updateData.grade = grade;
+  if (board) updateData.board = board;
+  if (dateOfBirth) updateData.dateOfBirth = dateOfBirth;
+  if (rollNumber) updateData.rollNumber = rollNumber.toUpperCase();
+  if (registrationNumber) updateData.registrationNumber = registrationNumber.toUpperCase();
 
   const user = await User.findByIdAndUpdate(
     req.user.id,
     updateData,
-    {
-      new: true,
-      runValidators: true,
-    }
-  ).select('-password');
+    { new: true, runValidators: true }
+  )
+    .select('-password')
+    .populate('examCenter', 'name centerCode city address latitude longitude');
 
   if (!user) {
     throw new AppError('User not found', 404);
@@ -181,10 +293,9 @@ const updateProfile = catchAsync(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    user,
+    user: buildUserResponse(user),
   });
 });
-
 
 const changePassword = catchAsync(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
@@ -219,6 +330,8 @@ const changePassword = catchAsync(async (req, res) => {
   });
 });
 
+
+
 const forgotPassword = catchAsync(async (req, res) => {
   const { email } = req.body;
 
@@ -240,7 +353,7 @@ const forgotPassword = catchAsync(async (req, res) => {
 
   try {
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-    
+
     await sendEmail({
       email: user.email,
       subject: 'Password Reset Request',
@@ -268,6 +381,7 @@ const forgotPassword = catchAsync(async (req, res) => {
 });
 
 
+
 const resetPassword = catchAsync(async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
@@ -285,7 +399,6 @@ const resetPassword = catchAsync(async (req, res) => {
     .update(token)
     .digest('hex');
 
-  // Find user with token
   const user = await User.findOne({
     resetPasswordToken,
     resetPasswordExpire: { $gt: Date.now() },
@@ -295,7 +408,6 @@ const resetPassword = catchAsync(async (req, res) => {
     throw new AppError('Invalid or expired reset token', 400);
   }
 
-  // Update password
   user.password = password;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpire = undefined;
@@ -310,10 +422,9 @@ const resetPassword = catchAsync(async (req, res) => {
 });
 
 
-const logout = async (req, res) => {
-  // Clear cookie if used
-  res.clearCookie('token');
 
+const logout = async (req, res) => {
+  res.clearCookie('token');
   res.status(200).json({
     success: true,
     message: 'Logged out successfully',
@@ -324,7 +435,6 @@ const logout = async (req, res) => {
 const verifyEmail = catchAsync(async (req, res) => {
   const { token } = req.params;
 
-  // Find user by verification token
   const user = await User.findOne({
     emailVerificationToken: token,
     emailVerificationExpire: { $gt: Date.now() },
@@ -348,6 +458,7 @@ const verifyEmail = catchAsync(async (req, res) => {
 });
 
 
+
 const resendVerification = catchAsync(async (req, res) => {
   const user = await User.findById(req.user.id);
 
@@ -359,19 +470,17 @@ const resendVerification = catchAsync(async (req, res) => {
     throw new AppError('Email already verified', 400);
   }
 
-  // Generate new verification token
   const verificationToken = crypto.randomBytes(32).toString('hex');
   user.emailVerificationToken = crypto
     .createHash('sha256')
     .update(verificationToken)
     .digest('hex');
-  user.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+  user.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000;
   await user.save();
 
-  // Send verification email
   try {
     const verifyUrl = `${process.env.FRONTEND_URL}/verify-email/${verificationToken}`;
-    
+
     await sendEmail({
       email: user.email,
       subject: 'Verify Your Email',

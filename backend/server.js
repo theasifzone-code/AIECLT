@@ -6,9 +6,11 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
-
+const mongoose = require('mongoose');
+dotenv.config();
 const connectDB = require('./src/config/database');
 const errorHandler = require('./src/middleware/errorHandler');
+const logger = require('./src/utils/logger');
 
 const authRoutes = require('./src/routes/authRoutes');
 const ocrRoutes = require('./src/routes/ocrRoutes');
@@ -16,38 +18,47 @@ const routeRoutes = require('./src/routes/routeRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
 const notificationRoutes = require('./src/routes/notificationRoutes');
 const scheduleRoutes = require('./src/routes/scheduleRoutes');
-
-//LOAD ENVIRONMENT 
-dotenv.config();
-
-//INITIALIZE EXPRESS
 const app = express();
 
-//  SECURITY MIDDLEWARE 
+app.set('trust proxy', 1);
+
+
+// SECURITY MIDDLEWARE
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     crossOriginOpenerPolicy: { policy: 'same-origin' },
-    crossOriginEmbedderPolicy: false, // <-- Vercel ke liye ye change karo
+    crossOriginEmbedderPolicy: false,
+    contentSecurityPolicy: false, 
   })
 );
 
-// CORS - Cross-Origin 
+// CORS
 const allowedOrigins = [
-  'https://aieclt.vercel.app', // Apna frontend ka exact Vercel URL
+  'https://aieclt.vercel.app',
   'http://localhost:5173',
-  'http://localhost:3000'
+  'http://localhost:3000',
 ];
+if (process.env.ADDITIONAL_ORIGINS) {
+  allowedOrigins.push(...process.env.ADDITIONAL_ORIGINS.split(','));
+}
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
     }
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    if (origin.endsWith('.vercel.app') && origin.includes('aieclt')) {
+      return callback(null, true);
+    }
+
+    logger.warn(`CORS blocked origin: ${origin}`);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   optionsSuccessStatus: 200,
@@ -57,35 +68,73 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Rate Limiting 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000,
   message: {
     success: false,
-    message: 'Too many requests from this IP, please try again after 15 minutes.',
+    message: 'Too many requests from this IP, please try again later.',
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'development',
 });
-app.use('/api', limiter);
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 20, 
+  message: {
+    success: false,
+    message: 'Too many authentication attempts. Please try again after 15 minutes.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'development',
+});
+
+const ocrLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: {
+    success: false,
+    message: 'Too many OCR requests. Please wait a moment.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'development',
+});
+
+app.use('/api', globalLimiter);
 
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 } else {
-  app.use(morgan('combined'));
+  app.use(
+    morgan('combined', {
+      stream: {
+        write: (message) => logger.info(message.trim()),
+      },
+    })
+  );
 }
-
 app.use(compression());
 
-// BODY PARSER 
+// BODY PARSER
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// STATIC FILES
+app.use(
+  '/uploads',
+  express.static(path.join(__dirname, 'uploads'), {
+    maxAge: '1d', 
+    etag: true,
+  })
+);
 
-// ==================== API DOCUMENTATION ====================
 
+// API DOCUMENTATION
 app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
@@ -93,7 +142,6 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     description: 'AI-powered Examination Center Location Tracer',
     environment: process.env.NODE_ENV || 'development',
-    documentation: 'https://documenter.getpostman.com/view/your-docs',
     endpoints: {
       auth: {
         base: '/api/auth',
@@ -116,6 +164,8 @@ app.get('/', (req, res) => {
           createCenter: 'POST /api/admin/centers',
           updateCenter: 'PUT /api/admin/centers/:id',
           deleteCenter: 'DELETE /api/admin/centers/:id',
+          assignOfficial: 'PUT /api/admin/centers/assign-official',
+          centerStudents: 'GET /api/admin/centers/:centerId/students',
           schedules: 'GET /api/admin/schedules',
           createSchedule: 'POST /api/admin/schedules',
           users: 'GET /api/admin/users',
@@ -130,6 +180,8 @@ app.get('/', (req, res) => {
           extractCenter: 'POST /api/ocr/extract-center',
           manualSearch: 'POST /api/ocr/manual-center',
           centers: 'GET /api/ocr/centers',
+          centerById: 'GET /api/ocr/centers/:id',
+          nearbyCenters: 'GET /api/ocr/centers/nearby/search',
           cities: 'GET /api/ocr/cities',
         },
       },
@@ -138,8 +190,25 @@ app.get('/', (req, res) => {
         methods: {
           getRoute: 'POST /api/route/get-route',
           getETA: 'POST /api/route/get-eta',
+          toCenter: 'POST /api/route/to-center',
+          multiCenter: 'POST /api/route/multi-center',
           nearbyCenters: 'POST /api/route/nearby-centers',
           geocode: 'POST /api/route/geocode',
+        },
+      },
+      schedules: {
+        base: '/api/schedules',
+        methods: {
+          all: 'GET /api/schedules',
+          student: 'GET /api/schedules/student',
+          upcoming: 'GET /api/schedules/upcoming',
+          stats: 'GET /api/schedules/stats',
+          byCenter: 'GET /api/schedules/center/:centerId',
+          dateRange: 'GET /api/schedules/date-range',
+          register: 'POST /api/schedules/:id/register',
+          unregister: 'POST /api/schedules/:id/unregister',
+          updateStatus: 'PATCH /api/schedules/:id/status',
+          publishResults: 'POST /api/schedules/:id/publish-results',
         },
       },
       notifications: {
@@ -152,35 +221,22 @@ app.get('/', (req, res) => {
         },
       },
     },
-    health: {
-      status: 'healthy',
-      uptime: process.uptime(),
-      timestamp: new Date().toISOString(),
-      mongodb: 'connected',
-    },
+    health: 'GET /health',
   });
 });
 
-app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    status: 'healthy',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    mongodb: 'connected',
-  });
-});
 
-//  ROUTES 
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+app.use('/api/ocr/extract-center', ocrLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ocr', ocrRoutes);
 app.use('/api/route', routeRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/schedules', scheduleRoutes);
-
-//  404 HANDLER 
+// 404 HANDLER
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -190,41 +246,66 @@ app.use((req, res) => {
   });
 });
 
-// GLOBAL ERROR HANDLER
 app.use(errorHandler);
-
 const PORT = process.env.PORT || 5000;
-connectDB();
-module.exports = app;
 
+const startServer = async () => {
+  try {
+    await connectDB();
+    logger.info('MongoDB connected');
+    const server = app.listen(PORT, () => {
+      logger.info(`Server running on http://localhost:${PORT}`);
+      logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`Started at: ${new Date().toISOString()}`);
+    });
+    const gracefulShutdown = async (signal) => {
+      logger.info(`${signal} received. Shutting down gracefully...`);
+
+      server.close(async () => {
+        logger.info('HTTP server closed');
+
+        try {
+          await mongoose.connection.close();
+          logger.info('MongoDB connection closed');
+          process.exit(0);
+        } catch (err) {
+          logger.error('Error closing MongoDB:', err.message);
+          process.exit(1);
+        }
+      });
+
+      // Force shutdown after 10 seconds
+      setTimeout(() => {
+        logger.error('Forced shutdown after timeout');
+        process.exit(1);
+      }, 10000);
+    };
+
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+    return server;
+  } catch (error) {
+    logger.error('Failed to start server:', error.message);
+    process.exit(1);
+  }
+};
+
+
+process.on('unhandledRejection', (err) => {
+  logger.error('Unhandled Rejection:', err);
+  logger.error(err.stack);
+  process.exit(1);
+});
+
+process.on('uncaughtException', (err) => {
+  logger.error('Uncaught Exception:', err);
+  logger.error(err.stack);
+  process.exit(1);
+});
 
 if (require.main === module) {
-  const startServer = () => {
-    // <-- Database ab yahan connect hoga
-    try {
-      app.listen(PORT, () => {
-        console.log(`Server running on: http://localhost:${PORT}`);
-      });
-    } catch (error) {
-      console.error('Failed to start server:', error.message);
-      process.exit(1);
-    }
-  };
-
   startServer();
-
-  process.on('unhandledRejection', (err) => {
-    console.error(' Unhandled Rejection:', err);
-    process.exit(1);
-  });
-
-  process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err);
-    process.exit(1);
-  });
-
-  process.on('SIGTERM', () => {
-    console.log('SIGTERM received. Shutting down gracefully...');
-    process.exit(0);
-  });
 }
+
+module.exports = { app, startServer };

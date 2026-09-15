@@ -7,14 +7,18 @@ const ScheduleSchema = new mongoose.Schema(
       ref: 'ExamCenter',
       required: [true, 'Please add an exam center'],
     },
+    students: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
     examDate: {
       type: Date,
       required: [true, 'Please add exam date'],
       validate: {
         validator: function (value) {
-          if (!this.isNew) {
-            return true;
-          }
+          if (!this.isNew) return true;
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           return value >= today;
@@ -22,11 +26,13 @@ const ScheduleSchema = new mongoose.Schema(
         message: 'Exam date cannot be in the past',
       },
     },
+
     examTime: {
       type: String,
       required: [true, 'Please add exam time'],
       match: [/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Please add a valid time (HH:MM)'],
     },
+
     subject: {
       type: String,
       required: [true, 'Please add subject'],
@@ -34,6 +40,7 @@ const ScheduleSchema = new mongoose.Schema(
       minlength: [2, 'Subject must be at least 2 characters'],
       maxlength: [100, 'Subject cannot exceed 100 characters'],
     },
+
     subjectCode: {
       type: String,
       trim: true,
@@ -41,22 +48,32 @@ const ScheduleSchema = new mongoose.Schema(
       match: [/^[A-Z0-9]{3,10}$/, 'Subject code must be 3-10 alphanumeric characters'],
       default: '',
     },
+
+    grade: {
+      type: String,
+      enum: ['9', '10', '11', '12', 'other', null],
+      default: null,
+    },
+
     totalStudents: {
       type: Number,
       default: 0,
       min: [0, 'Total students cannot be negative'],
       max: [10000, 'Total students cannot exceed 10,000'],
     },
+
     registeredStudents: {
       type: Number,
       default: 0,
       min: [0, 'Registered students cannot be negative'],
     },
+
     status: {
       type: String,
       enum: ['upcoming', 'ongoing', 'completed', 'cancelled', 'postponed'],
       default: 'upcoming',
     },
+
     duration: {
       type: Number,
       default: 180,
@@ -68,10 +85,12 @@ const ScheduleSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+
     invigilators: {
       type: [String],
       default: [],
     },
+
     notes: {
       type: String,
       trim: true,
@@ -82,14 +101,17 @@ const ScheduleSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
+
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
+
     deletedAt: {
       type: Date,
       default: null,
@@ -114,7 +136,6 @@ const ScheduleSchema = new mongoose.Schema(
     toObject: { virtuals: true },
   }
 );
-
 ScheduleSchema.index({ examCenterId: 1 });
 ScheduleSchema.index({ examDate: 1 });
 ScheduleSchema.index({ subject: 1 });
@@ -123,7 +144,9 @@ ScheduleSchema.index({ isActive: 1 });
 ScheduleSchema.index({ deletedAt: 1 });
 ScheduleSchema.index({ examCenterId: 1, examDate: 1 });
 ScheduleSchema.index({ examDate: 1, status: 1 });
-
+ScheduleSchema.index({ students: 1 });
+ScheduleSchema.index({ grade: 1 });
+ScheduleSchema.index({ examCenterId: 1, grade: 1, examDate: 1 });
 ScheduleSchema.virtual('isDeleted').get(function () {
   return this.deletedAt !== null;
 });
@@ -140,12 +163,17 @@ ScheduleSchema.virtual('isFull').get(function () {
   return this.registeredStudents >= this.totalStudents;
 });
 
+ScheduleSchema.virtual('centerInfo', {
+  ref: 'ExamCenter',
+  localField: 'examCenterId',
+  foreignField: '_id',
+  justOne: true,
+});
 ScheduleSchema.pre('save', async function () {
   if (this.examDate && typeof this.examDate === 'string') {
     this.examDate = new Date(this.examDate);
     this.examDate.setHours(0, 0, 0, 0);
   }
-
   if (this.registeredStudents > this.totalStudents) {
     this.registeredStudents = this.totalStudents;
   }
@@ -157,9 +185,10 @@ ScheduleSchema.pre('save', async function () {
       .join('')
       .slice(0, 10);
   }
+  if (this.students && this.students.length > 0) {
+    this.registeredStudents = this.students.length;
+  }
 });
-
-
 
 ScheduleSchema.methods.softDelete = async function () {
   this.deletedAt = new Date();
@@ -173,6 +202,29 @@ ScheduleSchema.methods.restore = async function () {
   await this.save();
 };
 
+ScheduleSchema.methods.addStudent = async function (studentId) {
+  const idStr = studentId.toString();
+  const exists = this.students.some((s) => s.toString() === idStr);
+  if (!exists) {
+    this.students.push(studentId);
+    this.registeredStudents = this.students.length;
+    await this.save();
+  }
+  return this;
+};
+
+ScheduleSchema.methods.removeStudent = async function (studentId) {
+  const idStr = studentId.toString();
+  this.students = this.students.filter((s) => s.toString() !== idStr);
+  this.registeredStudents = this.students.length;
+  await this.save();
+  return this;
+};
+
+ScheduleSchema.methods.hasStudent = function (studentId) {
+  const idStr = studentId.toString();
+  return this.students.some((s) => s.toString() === idStr);
+};
 
 ScheduleSchema.statics.getStats = async function () {
   const now = new Date();
@@ -211,5 +263,46 @@ ScheduleSchema.statics.getStats = async function () {
   };
 };
 
+ScheduleSchema.statics.findForStudent = function (student) {
+  const orConditions = [];
+  orConditions.push({ students: student._id });
+  if (student.examCenter) {
+    const centerCondition = {
+      examCenterId: student.examCenter,
+      students: { $size: 0 },
+    };
+
+    if (student.grade) {
+      orConditions.push({ ...centerCondition, grade: student.grade });
+    } else {
+      orConditions.push(centerCondition);
+    }
+  }
+
+  return this.find({
+    $or: orConditions,
+    isActive: true,
+    deletedAt: null,
+  })
+    .populate('examCenterId', 'name city address latitude longitude centerCode')
+    .sort({ examDate: 1 });
+};
+
+ScheduleSchema.statics.findByCenter = function (centerId, options = {}) {
+  const query = {
+    examCenterId: centerId,
+    deletedAt: null,
+  };
+
+  if (options.status) query.status = options.status;
+  if (options.grade) query.grade = options.grade;
+  if (options.upcomingOnly) {
+    query.examDate = { $gte: new Date() };
+  }
+
+  return this.find(query)
+    .populate('students', 'name rollNumber email')
+    .sort({ examDate: 1 });
+};
 
 module.exports = mongoose.model('Schedule', ScheduleSchema);

@@ -16,7 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 function Login() {
-  const { login, error, loading } = useAuth();
+  const { login, error, loading, loginLoading } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
   
@@ -233,10 +233,10 @@ function Login() {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loginLoading}
                 className="w-full mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-[0.98] text-white py-3.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-bold text-xs shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 group"
               >
-                {loading ? (
+                {loginLoading ? (
                   <span className="flex items-center justify-center gap-2">
                     <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

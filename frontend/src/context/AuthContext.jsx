@@ -1,28 +1,59 @@
-// src/context/AuthContext.jsx - ✅ 100% FINAL FIXED (Refresh-Proof)
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 
-// ==================== CREATE CONTEXT ====================
 const AuthContext = createContext();
 
-// ==================== AUTH PROVIDER ====================
+const buildUserForStorage = (user) => {
+  if (!user) return null;
+
+  return {
+    _id: user._id || user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    country: user.country,
+    phone: user.phone,
+    city: user.city,
+    isActive: user.isActive,
+    isEmailVerified: user.isEmailVerified,
+    isApproved: user.isApproved,
+    profileImage: user.profileImage,
+    preferences: user.preferences,
+    examCenter: user.examCenter,        
+    rollNumber: user.rollNumber,
+    registrationNumber: user.registrationNumber,
+    grade: user.grade,
+    board: user.board,
+    dateOfBirth: user.dateOfBirth,
+    registeredSchedules: user.registeredSchedules,
+    assignedCenter: user.assignedCenter, 
+    lastLogin: user.lastLogin,
+    createdAt: user.createdAt,
+  };
+};
+
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [registerLoading, setRegisterLoading] = useState(false);
 
-  // ==================== INITIALIZE (✅ FIXED) ====================
   useEffect(() => {
     const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
-    
-    // ✅ Agar saved user hai, toh pehle use set karo (fast load ke liye)
+
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (err) {
+        console.error('Failed to parse saved user:', err);
+        localStorage.removeItem('user');
+      }
     }
 
-    // ✅ Agar token hai, toh server se verify karo
     if (token) {
       fetchUser();
     } else {
@@ -30,88 +61,99 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // ==================== FETCH USER (✅ FIXED) ====================
   const fetchUser = async () => {
     try {
       const { data } = await api.get('/auth/me');
-      setUser(data.user);
-      localStorage.setItem('user', JSON.stringify(data.user)); // ✅ Save user in localStorage
+      const userData = data.user;
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
     } catch (err) {
-      console.error('❌ Fetch user error:', err);
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setUser(null);
+      console.error('Fetch user error:', err);
+
+      if (err.response?.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // ==================== REGISTER ====================
+
   const register = async (formData) => {
     setError(null);
+    setRegisterLoading(true);
     try {
       const { data } = await api.post('/auth/register', formData);
-      
+
       localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user)); // ✅ Save user in localStorage
+      localStorage.setItem('user', JSON.stringify(buildUserForStorage(data.user)));
       setUser(data.user);
+
       toast.success('Registration successful! Welcome to AI-ECLT! 🎉');
-      
+
       return { success: true, user: data.user, token: data.token };
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Registration failed';
       setError(errorMsg);
       toast.error(errorMsg);
       return { success: false, error: errorMsg };
+    } finally {
+      setRegisterLoading(false);
     }
   };
 
-  // ==================== LOGIN (✅ FIXED) ====================
+
+  // LOGIN
   const login = async (formData) => {
+    setLoginLoading(true);
     setError(null);
     try {
       const { data } = await api.post('/auth/login', formData);
-      
+
       localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user)); // ✅ Save user in localStorage
+      localStorage.setItem('user', JSON.stringify(buildUserForStorage(data.user)));
       setUser(data.user);
+
       toast.success(`Welcome back, ${data.user.name}! 👋`);
-      
-      // ✅ IMPORTANT: User aur Token return karein
-      return { 
-        success: true, 
-        user: data.user, 
-        token: data.token 
+
+      return {
+        success: true,
+        user: data.user,
+        token: data.token,
       };
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Login failed';
       setError(errorMsg);
       toast.error(errorMsg);
       return { success: false, error: errorMsg };
+    } finally {
+      setLoginLoading(false);
     }
   };
 
-  // ==================== LOGOUT (✅ FIXED) ====================
+
+  // LOGOUT
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
     toast.success('Logged out successfully');
-    
-    // ✅ Page refresh karein taake private routes protect ho jayein
     setTimeout(() => {
       window.location.href = '/';
     }, 500);
   };
 
-  // ==================== UPDATE USER ====================
+
+  // UPDATE PROFILE
   const updateUser = async (formData) => {
     try {
       const { data } = await api.put('/auth/update-profile', formData);
       setUser(data.user);
-      localStorage.setItem('user', JSON.stringify(data.user)); // ✅ Save updated user
+      localStorage.setItem('user', JSON.stringify(buildUserForStorage(data.user)));
       toast.success('Profile updated successfully!');
-      return { success: true };
+      return { success: true, user: data.user };
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Update failed';
       toast.error(errorMsg);
@@ -119,7 +161,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ==================== CHANGE PASSWORD ====================
+  // CHANGE PASSWORD
   const changePassword = async (formData) => {
     try {
       await api.put('/auth/change-password', formData);
@@ -132,13 +174,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ==================== SUPER ADMIN - CREATE BOARD OFFICIAL ====================
+
   const createBoardOfficial = async (formData) => {
     setError(null);
     try {
-      const { data } = await api.post('/admin/board-official', formData);
+      const { data } = await api.post('/admin/users', {
+        ...formData,
+        role: 'board_official',
+      });
+
       toast.success('Board Official created successfully! Credentials sent via email.');
-      return { success: true, data };
+      return { success: true, data: data.user, user: data.user };
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Failed to create board official';
       setError(errorMsg);
@@ -147,13 +193,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ==================== SUPER ADMIN - CREATE ADMIN ====================
+
   const createAdmin = async (formData) => {
     setError(null);
     try {
-      const { data } = await api.post('/admin/create-admin', formData);
+      const { data } = await api.post('/admin/users', {
+        ...formData,
+        role: 'admin',
+      });
+
       toast.success('Admin created successfully! Credentials sent via email.');
-      return { success: true, data };
+      return { success: true, data: data.user, user: data.user };
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Failed to create admin';
       setError(errorMsg);
@@ -162,35 +212,87 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ==================== SUPER ADMIN - GET ALL USERS ====================
-  const getAllUsers = async () => {
+  const createStudent = async (formData) => {
+    setError(null);
     try {
-      const { data } = await api.get('/admin/users');
+      const { data } = await api.post('/admin/users', {
+        ...formData,
+        role: 'student',
+      });
+
+      toast.success('Student created successfully! Credentials sent via email.');
+      return { success: true, data: data.user, user: data.user };
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Failed to create student';
+      setError(errorMsg);
+      toast.error(errorMsg);
+      return { success: false, error: errorMsg };
+    }
+  };
+
+
+  const getAllUsers = async (filters = {}) => {
+    try {
+      const { data } = await api.get('/admin/users', { params: filters });
       return data.users || [];
     } catch (err) {
-      console.error('❌ Error fetching users:', err);
+      console.error('Error fetching users:', err);
       toast.error('Failed to fetch users');
       return [];
     }
   };
 
-  // ==================== CONTEXT VALUE ====================
+
+  const isLinkedToCenter = () => {
+    if (!user) return false;
+    if (user.role === 'admin') return true;
+    if (user.role === 'student') return !!user.examCenter;
+    if (user.role === 'board_official') return !!user.assignedCenter;
+    return false;
+  };
+
+  const getMyCenter = () => {
+    if (!user) return null;
+    if (user.role === 'student') return user.examCenter;
+    if (user.role === 'board_official') return user.assignedCenter;
+    return null;
+  };
+
+
+  const getMyCenterId = () => {
+    const center = getMyCenter();
+    if (!center) return null;
+    return typeof center === 'object' ? center._id : center;
+  };
+
+
   const value = {
     user,
     loading,
     error,
+    loginLoading,
+    registerLoading,
     register,
     login,
     logout,
     updateUser,
     changePassword,
+
     createBoardOfficial,
     createAdmin,
+    createStudent,
     getAllUsers,
+
+    isLinkedToCenter,
+    getMyCenter,
+    getMyCenterId,
+
     isSuperAdmin: user?.role === 'admin',
     isBoardOfficial: user?.role === 'board_official',
     isStudent: user?.role === 'student',
     isAuthenticated: !!user,
+    myCenter: getMyCenter(),
+    myCenterId: getMyCenterId(),
   };
 
   return (
@@ -200,7 +302,6 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// ==================== USE AUTH HOOK ====================
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
