@@ -859,7 +859,7 @@ const StudentPortal = () => {
           )}
 
           {activeTab === 'profile' && (
-            <div className={`${ui.panel} p-5 sm:p-6 max-w-2xl`}>
+            <div className={`${ui.panel} p-5 sm:p-6 `}>
               <h2 className="text-base font-bold text-slate-100 mb-6 flex items-center gap-3">
                 <span className="p-2 bg-gradient-to-br from-teal-500/25 to-emerald-500/10 text-teal-300 rounded-xl ring-1 ring-teal-500/30">
                   <Cog6ToothIcon className="w-5 h-5" />

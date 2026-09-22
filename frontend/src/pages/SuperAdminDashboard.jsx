@@ -62,7 +62,7 @@ const roleStyles = {
 const SuperAdminDashboard = () => {
   const { user, logout, getAllUsers } = useAuth();
 
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('Dashboard');
   const [users, setUsers] = useState([]);
   const [centers, setCenters] = useState([]);
   const [schedules, setSchedules] = useState([]);
@@ -527,7 +527,7 @@ const SuperAdminDashboard = () => {
   }, [schedules]);
 
   const menuItems = [
-    { id: 'overview', label: 'Overview', icon: HomeIcon, hint: 'System overview' },
+    { id: 'Dashboard', label: 'Dashboard', icon: HomeIcon, hint: 'System Dashboard' },
     { id: 'users', label: 'Users', icon: UserGroupIcon, hint: 'Manage accounts' },
     { id: 'centers', label: 'Exam Centers', icon: BuildingOfficeIcon, hint: 'Center network' },
     { id: 'schedules', label: 'Schedules', icon: CalendarIcon, hint: 'Exam timetable' },
@@ -595,7 +595,7 @@ const SuperAdminDashboard = () => {
     );
   };
 
-  const renderOverview = () => (
+  const renderDashboard = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
@@ -2082,9 +2082,7 @@ const SuperAdminDashboard = () => {
               <span className="text-slate-100 font-bold block leading-tight truncate">
                 Super Admin
               </span>
-              <span className="text-[11px] text-slate-500 truncate">
-                System Dashboard
-              </span>
+            
             </div>
           )}
         </div>
@@ -2145,9 +2143,9 @@ const SuperAdminDashboard = () => {
                   {menuItems.find((item) => item.id === activeTab)?.label ||
                     'Dashboard'}
                 </h1>
-                <p className="text-xs text-slate-500 truncate hidden sm:block">
+                {/* <p className="text-xs text-slate-500 truncate hidden sm:block">
                   {menuItems.find((item) => item.id === activeTab)?.hint || ''}
-                </p>
+                </p> */}
               </div>
             </div>
 
@@ -2188,7 +2186,7 @@ const SuperAdminDashboard = () => {
             </div>
           ) : (
             <>
-              {activeTab === 'overview' && renderOverview()}
+              {activeTab === 'Dashboard' && renderDashboard()}
               {activeTab === 'users' && renderUsers()}
               {activeTab === 'centers' && renderCenters()}
               {activeTab === 'schedules' && renderSchedules()}
